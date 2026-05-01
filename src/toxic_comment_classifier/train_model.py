@@ -5,7 +5,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from toxic_comment_classifier.config import DEFAULT_CONFIG, MODELS_DIR, PROCESSED_DATA_DIR
+from toxic_comment_classifier.config import (
+    DEFAULT_CONFIG,
+    MODELS_DIR,
+    PROCESSED_DATA_DIR,
+)
 from toxic_comment_classifier.logging_config import get_logger, setup_logging
 from toxic_comment_classifier.utils.seed import set_seed
 

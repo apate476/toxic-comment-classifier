@@ -1,6 +1,6 @@
 """toxic_comment_classifier.
 
-A multilabel toxic comment classifier using DistilBERT and HuggingFace Transformers with full MLOps pipeline including experiment tracking, CI/CD, Docker, and FastAPI deployment
+Toxic comment classifier using DistilBERT and HuggingFace Transformers with MLOps pipeline
 """
 
 from importlib.metadata import PackageNotFoundError, version
