@@ -147,3 +147,8 @@ Thumbs.db
 
 # Project specific
 config/local_settings.py
+
+# DVC
+.dvc/cache
+.dvc/tmp
+.dvc/config.local

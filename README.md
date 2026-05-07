@@ -1,3 +1,67 @@
+## Scope & Objectives
+
+**Problem Statement:**
+Many online platforms struggle to moderate toxic user-generated content at scale. This project builds an automated multi-label toxic comment classifier using DistilBERT to detect six categories of toxicity simultaneously.
+
+**Goals:**
+
+- Fine-tune DistilBERT on the Jigsaw dataset for multi-label classification
+- Deploy a FastAPI inference endpoint for real-time predictions
+- Establish a reproducible MLOps pipeline with MLflow, DVC, and GitHub Actions CI/CD
+
+**Success Metrics:**
+
+- Macro F1 Score across all 6 labels
+- ROC-AUC per label on the test set
+- Experiment reproducibility via MLflow with fixed random seeds
+- Model artifact versioning
+- CI/CD pipeline status on pull requests into dev
+
+## Detailed Description
+
+**Business Context:**
+Online platforms receive millions of user comments daily, making manual moderation impossible at scale. Toxic content left unmoderated leads to user churn, reputational damage, and potential legal liability. An automated classifier that can detect multiple forms of toxicity simultaneously provides a scalable solution for real-time content moderation.
+
+**Technical Approach:**
+This project fine-tunes DistilBERT, a lightweight transformer model that retains approximately 97% of BERT's language understanding while being significantly faster and smaller. The task is framed as multi-label classification, meaning a single comment can simultaneously belong to multiple toxicity categories. A 6-unit sigmoid output head replaces the default classification head to support this. The model is trained on the Jigsaw Toxic Comment Classification dataset consisting of approximately 159,000 Wikipedia talk page comments labeled across 6 toxicity categories.
+
+The MLOps infrastructure prioritizes reproducibility and collaboration. MLflow tracks all experiment parameters, metrics, and model artifacts. DVC with a Google Drive remote handles data versioning. GitHub Actions powers CI/CD, running linting via ruff, type checking via mypy, and tests on every pull request. All feature development occurs on the dev branch via short-lived feature branches, with main reserved for end of phase merges.
+
+**Expected Outcomes:**
+By the end of Phase 1 the project will deliver a trained DistilBERT multi-label classifier with logged metrics and versioned model artifacts, a FastAPI endpoint for real-time toxicity predictions, a fully reproducible MLOps pipeline, and comprehensive documentation covering data handling, model architecture, and API usage.
+
+## Dataset Selection
+
+**Selected Dataset:** Jigsaw Toxic Comment Classification Challenge
+**Source:** Kaggle mirror — `julian3833/jigsaw-toxic-comment-classification-challenge`
+
+**Justification:**
+
+- The 6-label multi-label structure directly matches the problem requirements, alternatives like Twitter Hate Speech and Civil Comments only provide binary toxic or non-toxic labels
+- Large enough at approximately 159,000 comments to fine-tune a transformer model effectively
+- Originates from real Wikipedia talk page edits providing naturally occurring toxic and non-toxic text
+- Widely used in NLP research providing a reliable benchmark for comparing results
+
+## Dataset Description
+
+**Size:** ~159,571 comments
+
+**Features:**
+
+- `id` — unique comment identifier
+- `comment_text` — raw Wikipedia talk page comment
+- `toxic`, `severe_toxic`, `obscene`, `threat`, `insult`, `identity_hate` — binary labels (0 or 1)
+
+**Format:** CSV
+
+**Source:** Wikipedia talk page edits, labeled by human raters via the Jigsaw/Conversation AI project
+
+## Model Considerations
+
+- DistilBERT with a 6-unit sigmoid output head — best suited for multi-label text classification given its strong natural language understanding from pretraining
+- TF-IDF + Logistic Regression — lightweight baseline suitable for establishing a performance floor quickly
+- TF-IDF + LightGBM — stronger classical baseline that handles non-linear feature interactions better than logistic regression
+
 # toxic_comment_classifier
 
 A multilabel toxic comment classifier using DistilBERT and HuggingFace Transformers with full MLOps pipeline including experiment tracking, CI/CD, Docker, and FastAPI deployment
@@ -5,13 +69,14 @@ A multilabel toxic comment classifier using DistilBERT and HuggingFace Transform
 ## Team Information
 
 - **Project Lead:** team_toxic (apate424@depaul.edu)
-- **Team Members:** *To be filled in*
+- **Team Members:** Arya Patel, Asad Khan, Bilal Qader, Taha Patil
 
 ## Project Overview
 
 toxic_comment_classifier is a machine learning project that implements A multilabel toxic comment classifier using DistilBERT and HuggingFace Transformers with full MLOps pipeline including experiment tracking, CI/CD, Docker, and FastAPI deployment.
 
 **Key Objectives:**
+
 - [ ] Objective 1
 - [ ] Objective 2
 - [ ] Objective 3
@@ -28,17 +93,21 @@ and interactions between different parts of the system.
 ## Phase Deliverables
 
 ### Phase 1: Project Design & Model Development
+
 - See [PHASE1.md](PHASE1.md) for detailed checklist
 
 ### Phase 2: Containerization & Monitoring
+
 - See [PHASE2.md](PHASE2.md) for detailed checklist
 
 ### Phase 3: CI/CD & Deployment
+
 - See [PHASE3.md](PHASE3.md) for detailed checklist
 
 ## Setup Instructions
 
 ### Prerequisites
+
 - Python 3.11+ installed
 - Git installed
 - (Optional) Docker and Docker Compose
@@ -46,12 +115,14 @@ and interactions between different parts of the system.
 ### Installation
 
 **Option 1: Using uv (recommended - faster)**
+
 ```bash
 pip install uv
 uv pip install -r requirements.txt
 ```
 
 **Option 2: Using pip**
+
 ```bash
 pip install -U pip
 pip install -r requirements.txt
@@ -89,23 +160,33 @@ make help
 ## Technology Stack
 
 ### Core Dependencies
+
 - **numpy** >= 1.26.0 - Numerical computing
 - **pandas** >= 2.2.0 - Data manipulation
 - **scikit-learn** >= 1.5.0 - Machine learning algorithms
 - **matplotlib** >= 3.9.0 - Visualization
 - **tqdm** >= 4.66.0 - Progress bars
 - **pyyaml** >= 6.0 - Configuration files
+
 ### Deep Learning (PyTorch)
+
 - **torch** >= 2.3.0 - PyTorch framework
+
 ### Experiment Tracking
+
 - **mlflow** >= 2.16.0 - MLflow experiment tracking
+
 ### Configuration Management
+
 - **hydra-core** >= 1.3.0 - Hydra configuration framework
 - **omegaconf** >= 2.3.0 - Hierarchical configuration
+
 ### Data Version Control
+
 - **dvc** >= 3.55.0 - Data Version Control
 
 ### Development Tools
+
 - **pytest** >= 8.0 - Testing framework
 - **pytest-cov** >= 5.0 - Code coverage
 - **ruff** >= 0.6.0 - Linting and formatting
@@ -183,11 +264,11 @@ toxic_comment_classifier/                  # Repository root
 
 ### Why `src/` layout?
 
-| | `src/` layout (this template) | Flat layout |
-|---|---|---|
-| Forces `pip install -e .` before import | ✅ | ❌ |
-| Catches packaging bugs early | ✅ | ❌ |
-| Adopted by | attrs, httpx, pydantic, flask, sqlalchemy | Older data-science templates |
+|                                         | `src/` layout (this template)             | Flat layout                  |
+| --------------------------------------- | ----------------------------------------- | ---------------------------- |
+| Forces `pip install -e .` before import | ✅                                        | ❌                           |
+| Catches packaging bugs early            | ✅                                        | ❌                           |
+| Adopted by                              | attrs, httpx, pydantic, flask, sqlalchemy | Older data-science templates |
 
 Data and model artifacts are accessed via the constants in `toxic_comment_classifier.config` (`PROJECT_ROOT`, `DATA_DIR`, `MODELS_DIR`, …) rather than relative paths — code is independent of where you invoke it from.
 
