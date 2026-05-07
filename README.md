@@ -69,7 +69,7 @@ A multilabel toxic comment classifier using DistilBERT and HuggingFace Transform
 ## Team Information
 
 - **Project Lead:** team_toxic (apate424@depaul.edu)
-- **Team Members:** Arya Patel,
+- **Team Members:** Arya Patel, Asad Khan, Bilal Qader, Taha Patil
 
 ## Project Overview
 
