@@ -7,7 +7,7 @@ The project includes structured source code, data versioning support with DVC, b
 ## Team Information
 
 - **Project Lead:** team_toxic (apate424@depaul.edu)
-- **Team Members:** To be filled in
+- **Team Members:** Taha Patil, Arya Patel, Bilal Qader, Asad Khan
 
 ## Project Overview
 
