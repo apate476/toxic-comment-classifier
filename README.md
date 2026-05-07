@@ -64,84 +64,193 @@ By the end of Phase 1 the project will deliver a trained DistilBERT multi-label 
 
 # toxic_comment_classifier
 
-A multilabel toxic comment classifier using DistilBERT and HuggingFace Transformers with full MLOps pipeline including experiment tracking, CI/CD, Docker, and FastAPI deployment
+A multi-label toxic comment classification project built with a reproducible MLOps structure. The Phase 1 baseline model uses TF-IDF text features with a One-vs-Rest Logistic Regression classifier to predict six toxicity labels: toxic, severe_toxic, obscene, threat, insult, and identity_hate.
+
+The project includes structured source code, data versioning support with DVC, baseline model training, prediction generation, evaluation metrics, tests, and documentation for future MLOps phases.
 
 ## Team Information
 
 - **Project Lead:** team_toxic (apate424@depaul.edu)
-- **Team Members:** Arya Patel, Asad Khan, Bilal Qader, Taha Patil
+- **Team Members:** Taha Patil, Arya Patel, Bilal Qader, Asad Khan
 
 ## Project Overview
 
-toxic_comment_classifier is a machine learning project that implements A multilabel toxic comment classifier using DistilBERT and HuggingFace Transformers with full MLOps pipeline including experiment tracking, CI/CD, Docker, and FastAPI deployment.
+toxic_comment_classifier is a machine learning project focused on detecting toxic language in online comments. The goal is to classify each comment into one or more toxicity categories, including toxic, severe_toxic, obscene, threat, insult, and identity_hate.
+
+For Phase 1, the project establishes a reproducible baseline using TF-IDF feature extraction and a One-vs-Rest Logistic Regression classifier. This baseline provides an initial performance reference before more advanced models, such as transformer-based architectures, are explored in later phases.
+
+The repository follows an MLOps-oriented structure with separate folders for source code, data, tests, reports, model artifacts, and documentation. Data handling is supported through DVC, while model training and prediction are implemented as command-line entrypoints.
 
 **Key Objectives:**
 
-- [ ] Objective 1
-- [ ] Objective 2
-- [ ] Objective 3
+- Build a reproducible baseline model for multi-label toxic comment classification.
+- Establish clear project structure, data handling, and model training workflows.
+- Save baseline metrics and predictions for evaluation and future comparison.
+
+## Dataset
+
+The project uses a toxic comment classification dataset containing online comments labeled across six toxicity categories.
+
+### Label Columns
+
+| Label | Description |
+|---|---|
+| toxic | General toxic or harmful language |
+| severe_toxic | Strongly toxic language |
+| obscene | Obscene or inappropriate language |
+| threat | Threatening language |
+| insult | Insulting language |
+| identity_hate | Hate speech targeting identity groups |
+
+### Dataset Files
+
+| File | Purpose |
+|---|---|
+| `data/raw/train.csv` | Training data with comment text and labels |
+| `data/raw/test.csv` | Test data with comment text |
+| `data/raw/test_labels.csv` | Label file for test data |
+| `reports/predictions.csv` | Generated model predictions |
+
+The training file contains 159,571 labeled comments. For Phase 1, the model uses an 80/20 train-validation split from `train.csv`.
 
 ## Architecture Diagram
 
-```
-[Placeholder for architecture diagram]
-
-Insert your system architecture diagram here, showing data flow, components,
-and interactions between different parts of the system.
+```text
+Raw Data
+   |
+   v
+Data Validation
+   |
+   v
+TF-IDF Feature Extraction
+   |
+   v
+One-vs-Rest Logistic Regression
+   |
+   v
+Validation Metrics + Saved Model
+   |
+   v
+Predictions on Test Data
 ```
 
 ## Phase Deliverables
 
 ### Phase 1: Project Design & Model Development
 
-- See [PHASE1.md](PHASE1.md) for detailed checklist
+See [PHASE1.md](PHASE1.md) for the detailed Phase 1 checklist and model training summary.
 
 ### Phase 2: Containerization & Monitoring
 
-- See [PHASE2.md](PHASE2.md) for detailed checklist
+See [PHASE2.md](PHASE2.md) for the Phase 2 checklist.
 
 ### Phase 3: CI/CD & Deployment
 
-- See [PHASE3.md](PHASE3.md) for detailed checklist
+See [PHASE3.md](PHASE3.md) for the Phase 3 checklist.
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- Python 3.11+ installed
-- Git installed
-- (Optional) Docker and Docker Compose
+- Python 3.11+
+- Git
+- pip
+- Optional: Docker and Docker Compose
 
 ### Installation
 
-**Option 1: Using uv (recommended - faster)**
+Clone the repository and move into the project directory:
 
 ```bash
-pip install uv
-uv pip install -r requirements.txt
+git clone <repository-url>
+cd toxic-comment-classifier
 ```
 
-**Option 2: Using pip**
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project dependencies:
 
 ```bash
 pip install -U pip
 pip install -r requirements.txt
 ```
 
-### Development Setup
+For development tools, install:
 
 ```bash
-# Install development dependencies
 pip install -r requirements_dev.txt
+```
 
-# Set up pre-commit hooks
+If the project uses the `src/` layout, install the package in editable mode:
+
+```bash
+pip install -e .
+```
+
+If editable installation is not available, run commands with:
+
+```bash
+PYTHONPATH=src
+```
+
+## Development Setup
+
+Set up pre-commit hooks:
+
+```bash
 pre-commit install
+```
 
-# Run tests to verify setup
+Run tests to verify the environment:
+
+```bash
 pytest tests/
 ```
 
-### Running the Pipeline
+## Running the Pipeline
+
+### Train the Baseline Model
+
+From the project root, run:
+
+```bash
+python -m toxic_comment_classifier.train_model --data-path data/raw
+```
+
+This trains the Phase 1 baseline model using `data/raw/train.csv`.
+
+The trained model is saved to:
+
+```text
+models/baseline_tfidf_logreg.joblib
+```
+
+The validation metrics are saved to:
+
+```text
+reports/baseline_metrics.json
+```
+
+### Generate Predictions
+
+After training, run:
+
+```bash
+python -m toxic_comment_classifier.predict_model --input data/raw/test.csv
+```
+
+Predictions are saved to:
+
+```text
+reports/predictions.csv
+```
+
+### Common Make Commands
 
 ```bash
 # Prepare data
@@ -153,168 +262,214 @@ make train
 # Generate predictions
 make predict
 
-# See all available commands
-make help
-```
+# Run tests
+make test
 
-## Technology Stack
-
-### Core Dependencies
-
-- **numpy** >= 1.26.0 - Numerical computing
-- **pandas** >= 2.2.0 - Data manipulation
-- **scikit-learn** >= 1.5.0 - Machine learning algorithms
-- **matplotlib** >= 3.9.0 - Visualization
-- **tqdm** >= 4.66.0 - Progress bars
-- **pyyaml** >= 6.0 - Configuration files
-
-### Deep Learning (PyTorch)
-
-- **torch** >= 2.3.0 - PyTorch framework
-
-### Experiment Tracking
-
-- **mlflow** >= 2.16.0 - MLflow experiment tracking
-
-### Configuration Management
-
-- **hydra-core** >= 1.3.0 - Hydra configuration framework
-- **omegaconf** >= 2.3.0 - Hierarchical configuration
-
-### Data Version Control
-
-- **dvc** >= 3.55.0 - Data Version Control
-
-### Development Tools
-
-- **pytest** >= 8.0 - Testing framework
-- **pytest-cov** >= 5.0 - Code coverage
-- **ruff** >= 0.6.0 - Linting and formatting
-- **mypy** >= 1.11 - Static type checking
-- **pre-commit** >= 3.8 - Git hooks framework
-
-## Project Structure
-
-This template uses the modern **`src/` layout** — the importable package lives in `src/toxic_comment_classifier/`, decoupled from the repository root. That forces `pip install -e .` before imports work, which catches packaging bugs early.
-
-```
-toxic_comment_classifier/                  # Repository root
-├── src/
-│   └── toxic_comment_classifier/          # Importable Python package
-│       ├── __init__.py                # Version + package metadata
-│       ├── config.py                  # Paths & typed config (PROJECT_ROOT, TrainingConfig, ...)
-│       ├── logging_config.py          # setup_logging() + get_logger()
-│       ├── data/
-│       │   ├── __init__.py
-│       │   ├── loaders.py             # load_raw / load_processed / save_processed
-│       │   └── make_dataset.py        # Raw → processed pipeline CLI
-│       ├── features/
-│       │   ├── __init__.py
-│       │   └── build_features.py      # Feature engineering
-│       ├── models/
-│       │   ├── __init__.py
-│       │   ├── base.py                # BaseModel ABC (fit/predict/save/load)
-│       │   └── model.py               # Concrete Model scaffold
-│       ├── evaluation/
-│       │   ├── __init__.py
-│       │   └── metrics.py             # classification_report, regression_report
-│       ├── visualization/
-│       │   ├── __init__.py
-│       │   └── visualize.py           # Plot helpers
-│       ├── utils/
-│       │   ├── __init__.py
-│       │   ├── io.py                  # JSON helpers
-│       │   └── seed.py                # set_seed for reproducibility
-│       ├── train_model.py             # Training CLI
-│       └── predict_model.py           # Inference CLI
-├── tests/                             # Unit and integration tests
-│   ├── conftest.py
-│   └── test_model.py
-├── data/
-│   ├── raw/                           # Immutable raw data
-│   └── processed/                     # Cleaned, transformed data
-├── models/                            # Trained model artifacts (.joblib)
-├── notebooks/                         # Jupyter notebooks for exploration
-├── reports/
-│   └── figures/                       # Generated analysis and figures
-├── docs/                              # MkDocs documentation
-│   ├── mkdocs.yml
-│   ├── index.md
-│   ├── getting_started.md
-│   └── api.md
-├── dockerfiles/                       # Docker configuration
-│   └── Dockerfile
-├── configs/                           # Hydra configuration (if selected)
-│   └── config.yaml
-├── api/                               # FastAPI service (if selected)
-├── .github/workflows/                 # GitHub Actions CI/CD
-│   └── ci.yml
-├── PHASE1.md                          # Phase 1 deliverables checklist
-├── PHASE2.md                          # Phase 2 deliverables checklist
-├── PHASE3.md                          # Phase 3 deliverables checklist
-├── .pre-commit-config.yaml            # Pre-commit hooks (Ruff, mypy)
-├── Makefile                           # Common commands
-├── docker-compose.yaml                # Docker Compose setup
-├── pyproject.toml                     # Project config & dependencies
-├── requirements.txt                   # Runtime dependencies
-├── requirements_dev.txt               # Development dependencies
-├── LICENSE
-└── README.md
-```
-
-### Why `src/` layout?
-
-|                                         | `src/` layout (this template)             | Flat layout                  |
-| --------------------------------------- | ----------------------------------------- | ---------------------------- |
-| Forces `pip install -e .` before import | ✅                                        | ❌                           |
-| Catches packaging bugs early            | ✅                                        | ❌                           |
-| Adopted by                              | attrs, httpx, pydantic, flask, sqlalchemy | Older data-science templates |
-
-Data and model artifacts are accessed via the constants in `toxic_comment_classifier.config` (`PROJECT_ROOT`, `DATA_DIR`, `MODELS_DIR`, …) rather than relative paths — code is independent of where you invoke it from.
-
-## Common Commands
-
-```bash
-# Install package + runtime dependencies (editable install)
-make install
-
-# Install dev tools + pre-commit hooks
-make dev
-
-# Run linting and formatting checks
+# Run linting checks
 make lint
 
 # Auto-format code
 make format
 
-# Run tests
-make test
-
-# Clean up build artifacts
-make clean
-
-# Docker operations
-make docker_build
-make docker_run
-
-# Serve documentation locally
-make docs
+# See all available commands
+make help
 ```
+
+## Baseline Model Performance
+
+The Phase 1 baseline model uses TF-IDF vectorization with a One-vs-Rest Logistic Regression classifier. The model was trained on `data/raw/train.csv`, which contains 159,571 labeled comments, using an 80/20 train-validation split.
+
+### Model Configuration
+
+| Component | Value |
+|---|---|
+| Feature extraction | TF-IDF |
+| Maximum features | 50,000 |
+| N-gram range | Unigrams and bigrams |
+| Stop words | English |
+| Classifier | One-vs-Rest Logistic Regression |
+| Solver | liblinear |
+| Max iterations | 1000 |
+| Validation split | 20% |
+| Random seed | 42 |
+
+### Validation Metrics
+
+| Metric | Score |
+|---|---:|
+| Micro F1 | 0.6581 |
+| Macro F1 | 0.4738 |
+| Micro Precision | 0.8865 |
+| Micro Recall | 0.5233 |
+| Hamming Loss | 0.0201 |
+
+The baseline model shows strong precision, meaning that predicted toxicity labels are usually reliable. The lower recall indicates that the model misses some toxic examples, which is expected for a simple baseline on an imbalanced multi-label text classification dataset.
+
+Future work may include experimenting with transformer-based models such as DistilBERT to improve recall and overall classification performance.
+
+## Technology Stack
+
+### Core Dependencies
+
+- **numpy** - Numerical computing
+- **pandas** - Data manipulation and CSV loading
+- **scikit-learn** - TF-IDF vectorization, Logistic Regression, metrics, and train-validation splitting
+- **joblib** - Model persistence
+- **pyyaml** - Configuration file support
+
+### Data Version Control
+
+- **DVC** - Data versioning and remote data storage support
+
+### Development Tools
+
+- **pytest** - Testing framework
+- **pytest-cov** - Test coverage
+- **ruff** - Linting and formatting
+- **mypy** - Static type checking
+- **pre-commit** - Git hook automation
+
+### Future MLOps Tools
+
+- **Docker** - Containerized execution
+- **FastAPI** - Model serving API
+- **MLflow** - Experiment tracking
+- **GitHub Actions** - CI/CD automation
+
+## Project Structure
+
+This project uses the modern `src/` layout. The importable package lives in `src/toxic_comment_classifier/`, which keeps source code separate from project configuration, data, reports, and tests.
+
+```text
+toxic-comment-classifier/
+├── src/
+│   └── toxic_comment_classifier/
+│       ├── __init__.py
+│       ├── config.py
+│       ├── logging_config.py
+│       ├── train_model.py
+│       ├── predict_model.py
+│       ├── data/
+│       ├── evaluation/
+│       ├── features/
+│       ├── models/
+│       ├── utils/
+│       └── visualization/
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_data.py
+│   └── test_model.py
+├── data/
+│   ├── raw/
+│   │   ├── train.csv
+│   │   ├── test.csv
+│   │   └── test_labels.csv
+│   └── processed/
+├── models/
+│   └── baseline_tfidf_logreg.joblib
+├── reports/
+│   ├── baseline_metrics.json
+│   ├── predictions.csv
+│   └── figures/
+├── notebooks/
+├── docs/
+├── configs/
+├── dockerfiles/
+├── api/
+├── .github/
+├── PHASE1.md
+├── PHASE2.md
+├── PHASE3.md
+├── requirements.txt
+├── requirements_dev.txt
+├── pyproject.toml
+├── Makefile
+├── docker-compose.yaml
+├── LICENSE
+└── README.md
+```
+
+## Code Organization
+
+The main training and prediction entrypoints are:
+
+```text
+src/toxic_comment_classifier/train_model.py
+src/toxic_comment_classifier/predict_model.py
+```
+
+The training script loads the raw training data, validates the required columns, trains the baseline model, evaluates it on a validation split, saves the model artifact, and writes metrics to the reports folder.
+
+The prediction script loads the saved model, scores the test comments, and writes predicted labels to `reports/predictions.csv`.
+
+## Data Handling
+
+Raw data is stored under:
+
+```text
+data/raw/
+```
+
+Processed or transformed data should be stored under:
+
+```text
+data/processed/
+```
+
+Large data files are managed with DVC instead of being committed directly to Git. This keeps the repository lightweight while preserving reproducibility.
+
+The raw data validation tests check that:
+
+- Training data has the expected columns.
+- Training data is not empty.
+- Comment text values are not missing.
+- Label columns contain binary values.
+- Test data has the expected structure.
+- Missing files raise the expected error.
+
+## Version Control Workflow
+
+The project uses a feature-branch workflow during development. Team members work on separate branches for data handling, model training, documentation, and project proposal updates. Changes are reviewed through pull requests before final submission.
+
+Commits should be descriptive and focused. Example commit messages include:
+
+```text
+feat(model): add baseline toxic comment classifier
+docs: update phase 1 model documentation
+test(data): add raw data validation tests
+chore(data): configure DVC remote
+```
+
+Before final submission, the repository should contain the completed Phase 1 implementation, generated reports, and updated documentation.
+
+## Documentation
+
+Important documentation files:
+
+| File | Description |
+|---|---|
+| `README.md` | Main project overview, setup instructions, model summary, and commands |
+| `PHASE1.md` | Phase 1 checklist and deliverables |
+| `PHASE2.md` | Phase 2 checklist |
+| `PHASE3.md` | Phase 3 checklist |
+| `data/README.md` | Data folder documentation |
+| `docs/` | Additional project documentation |
 
 ## Contribution Summary
 
-- [ ] Team members have been assigned
-- [ ] Development environment has been set up
-- [ ] Initial data exploration completed
-- [ ] Model baseline established
-- [ ] Evaluation metrics defined
-- [ ] Documentation updated
-- [ ] All tests passing
-- [ ] Code reviewed and merged
+- [x] Development environment has been set up
+- [x] Repository structure follows an MLOps-oriented `src/` layout
+- [x] Data versioning support has been configured with DVC
+- [x] Raw data validation tests have been added
+- [x] Baseline model has been implemented and trained
+- [x] Evaluation metrics have been generated and saved
+- [x] Test set predictions have been generated
+- [x] Documentation has been updated for Phase 1
+- [x] Phase 1 documentation prepared for submission
 
 ## References
 
-- [Project Documentation](docs/index.md)
 - [Phase 1 — Project Design & Model Development](PHASE1.md)
 - [Phase 2 — Containerization & Monitoring](PHASE2.md)
 - [Phase 3 — CI/CD & Deployment](PHASE3.md)
