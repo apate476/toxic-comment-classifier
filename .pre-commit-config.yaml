@@ -17,5 +17,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^\.dvc/
       - id: end-of-file-fixer
+        exclude: ^\.dvc/
       - id: check-yaml
