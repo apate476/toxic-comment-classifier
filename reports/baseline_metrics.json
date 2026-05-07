@@ -1,0 +1,34 @@
+{
+  "model_type": "TF-IDF + OneVsRest Logistic Regression",
+  "training_file": "data/raw/train.csv",
+  "rows": 159571,
+  "validation_split": 0.2,
+  "random_state": 42,
+  "labels": [
+    "toxic",
+    "severe_toxic",
+    "obscene",
+    "threat",
+    "insult",
+    "identity_hate"
+  ],
+  "micro_f1": 0.6581333333333333,
+  "macro_f1": 0.4738324026663516,
+  "micro_precision": 0.8864942528735632,
+  "micro_recall": 0.5233248515691263,
+  "hamming_loss": 0.02008459971800094,
+  "hyperparameters": {
+    "tfidf_max_features": 50000,
+    "tfidf_ngram_range": [
+      1,
+      2
+    ],
+    "tfidf_stop_words": "english",
+    "classifier": "LogisticRegression",
+    "solver": "liblinear",
+    "max_iter": 1000,
+    "epochs": 10,
+    "batch_size": 32,
+    "learning_rate": 0.001
+  }
+}
