@@ -303,5 +303,3 @@ This project is intentionally over-engineered for an academic baseline because t
 The Phase 1 baseline is deliberately simple (TF-IDF + LogReg on CPU) so the *infrastructure* takes the spotlight. Phase 2 swaps in a stronger model (DistilBERT) without touching any of the surrounding pipes — that's the whole point.
 
 ---
-
-*Generated for the SE 489 MLOps course project. Team Toxic — apate476, Tahapatil7908, Arya Patel, plus contributors.*
