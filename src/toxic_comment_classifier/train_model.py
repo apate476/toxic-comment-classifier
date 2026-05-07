@@ -118,12 +118,8 @@ def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: fl
         "labels": LABEL_COLUMNS,
         "micro_f1": float(f1_score(y_val, predictions, average="micro", zero_division=0)),
         "macro_f1": float(f1_score(y_val, predictions, average="macro", zero_division=0)),
-        "micro_precision": float(
-            precision_score(y_val, predictions, average="micro", zero_division=0)
-        ),
-        "micro_recall": float(
-            recall_score(y_val, predictions, average="micro", zero_division=0)
-        ),
+        "micro_precision": float(precision_score(y_val, predictions, average="micro", zero_division=0)),
+        "micro_recall": float(recall_score(y_val, predictions, average="micro", zero_division=0)),
         "hamming_loss": float(hamming_loss(y_val, predictions)),
         "hyperparameters": {
             "tfidf_max_features": 50_000,
