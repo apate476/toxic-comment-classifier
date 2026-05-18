@@ -275,6 +275,45 @@ make format
 make help
 ```
 
+## Containerization
+
+The project ships a reproducible Docker setup so training and inference run identically on any host. Build configuration lives in `dockerfiles/Dockerfile`; runtime orchestration lives in `docker-compose.yaml` at the repository root.
+
+### Image overview
+
+- Base image: `python:3.11-slim-bookworm` (pinned to the Debian *bookworm* release).
+- Multi-stage build: dependencies are installed into an isolated user-site in a `builder` stage and copied into a clean runtime stage.
+- `.dockerignore` keeps virtualenvs, DVC-pulled datasets, MLflow runs, model artifacts, secrets, and caches out of the build context.
+
+### Bind mounts (host ↔ container)
+
+| Host path | Container path | Mode | Purpose |
+|---|---|---|---|
+| `./data` | `/app/data` | read-only | DVC-pulled Jigsaw CSVs |
+| `./models` | `/app/models` | read-write | Trained model artifacts |
+| `./mlruns` | `/app/mlruns` | read-write | MLflow run metadata + artifacts |
+| `./configs` | `/app/configs` | read-only | Hydra / YAML configuration |
+| `./reports` | `/app/reports` | read-write | Metrics, predictions, figures |
+
+### Build and run
+
+```bash
+# Build the image
+docker compose build
+
+# Run the default entrypoint (training)
+docker compose up
+
+# Run a different command (predict, test, shell, etc.)
+docker compose run --rm toxic_comment_classifier \
+    python -m toxic_comment_classifier.predict_model --input data/raw/test.csv
+
+# Interactive shell inside the image
+docker compose run --rm --entrypoint bash toxic_comment_classifier
+```
+
+> Prerequisite: Docker Desktop (or an equivalent Docker Engine) must be running. The repo expects `data/raw/*.csv` to already be DVC-pulled on the host because `data/` is bind-mounted into the container rather than baked into the image.
+
 ## Baseline Model Performance
 
 The Phase 1 baseline model uses TF-IDF vectorization with a One-vs-Rest Logistic Regression classifier. The model was trained on `data/raw/train.csv`, which contains 159,571 labeled comments, using an 80/20 train-validation split.
