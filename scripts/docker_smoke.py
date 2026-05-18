@@ -24,10 +24,10 @@ def main() -> int:
 
     print("\n=== Config / paths ===")
     from toxic_comment_classifier.config import (
+        MODELS_DIR,
+        PROCESSED_DATA_DIR,
         PROJECT_ROOT,
         RAW_DATA_DIR,
-        PROCESSED_DATA_DIR,
-        MODELS_DIR,
     )
 
     print("PROJECT_ROOT      :", PROJECT_ROOT)
@@ -47,11 +47,11 @@ def main() -> int:
         print(f"  /app/{p:18s} entries={n}")
 
     print("\n=== Heavy deps ===")
-    import torch
-    import transformers
     import mlflow
     import pandas
     import sklearn
+    import torch
+    import transformers
 
     print("torch       :", torch.__version__, "| cuda:", torch.cuda.is_available())
     print("transformers:", transformers.__version__)
