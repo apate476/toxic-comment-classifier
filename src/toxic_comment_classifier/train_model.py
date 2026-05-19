@@ -126,11 +126,10 @@ def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: fl
             "tfidf_ngram_range": [1, 2],
             "tfidf_stop_words": "english",
             "classifier": "LogisticRegression",
+            "C": 1.0,
+            "penalty": "l2",
             "solver": "liblinear",
             "max_iter": 1000,
-            "epochs": epochs,
-            "batch_size": batch_size,
-            "learning_rate": lr,
         },
     }
 
