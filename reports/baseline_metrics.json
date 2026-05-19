@@ -1,6 +1,6 @@
 {
   "model_type": "TF-IDF + OneVsRest Logistic Regression",
-  "training_file": "data/raw/train.csv",
+  "training_file": "/Users/arya/Documents/SE489/toxic-comment-classifier/toxic_comment_classifier/data/raw/train.csv",
   "rows": 159571,
   "validation_split": 0.2,
   "random_state": 42,
@@ -24,6 +24,7 @@
       2
     ],
     "tfidf_stop_words": "english",
+    "tfidf_min_df": 1,
     "classifier": "LogisticRegression",
     "C": 1.0,
     "penalty": "l2",
