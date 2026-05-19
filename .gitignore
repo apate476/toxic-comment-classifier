@@ -162,3 +162,6 @@ mlartifacts/
 # Hydra run-scoped output dirs
 outputs/
 models/*.joblib
+
+# Application logs
+logs/

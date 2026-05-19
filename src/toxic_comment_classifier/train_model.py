@@ -12,6 +12,7 @@ import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
+from rich.traceback import install as install_rich_traceback
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
@@ -161,6 +162,7 @@ def train(cfg: DictConfig) -> None:
 @hydra.main(version_base="1.3", config_path="../../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
     """Run model training from the command line via Hydra."""
+    install_rich_traceback(show_locals=False)
     setup_logging()
     logger.info("Configuration:\n%s", OmegaConf.to_yaml(cfg))
 
