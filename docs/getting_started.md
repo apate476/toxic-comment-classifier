@@ -143,6 +143,11 @@ pre-commit autoupdate
 
 ## Docker Usage
 
+The repository ships a multi-stage `dockerfiles/Dockerfile` based on
+`python:3.11-slim-bookworm` and a Compose V2 service definition in
+`docker-compose.yaml`. Bind mounts make `data/`, `models/`, `mlruns/`,
+`configs/`, and `reports/` shared between the host and the container.
+
 ### Build Docker Image
 
 ```bash
@@ -158,8 +163,14 @@ docker build -t toxic_comment_classifier -f dockerfiles/Dockerfile .
 ### Run with Docker Compose
 
 ```bash
-docker-compose up
+docker compose up        # build (if needed) and run the default service
+docker compose build     # rebuild without running
+docker compose run --rm toxic_comment_classifier python -m toxic_comment_classifier.predict_model --input data/raw/test.csv
 ```
+
+> Use `docker compose` (V2 plugin syntax). The legacy hyphenated
+> `docker-compose` CLI still works on some systems but is no longer the
+> recommended entrypoint.
 
 ### Run Single Container
 
