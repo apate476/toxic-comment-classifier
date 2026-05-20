@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -110,14 +111,22 @@ def train(cfg: DictConfig) -> None:
         len(x_train),
         len(x_val),
     )
+    fit_start = time.perf_counter()
     model.fit(x_train, y_train)
+    fit_elapsed = time.perf_counter() - fit_start
+    logger.info("Model fit completed in %.2fs", fit_elapsed)
 
+    predict_start = time.perf_counter()
     predictions = model.predict(x_val)
+    predict_elapsed = time.perf_counter() - predict_start
+    logger.info("Validation prediction completed in %.2fs", predict_elapsed)
 
     metrics: dict[str, Any] = {
         "model_type": "TF-IDF + OneVsRest Logistic Regression",
         "training_file": str(train_file),
         "rows": int(len(df)),
+        "fit_seconds": round(fit_elapsed, 2),
+        "predict_seconds": round(predict_elapsed, 2),
         "validation_split": cfg.data.val_split,
         "random_state": cfg.seed,
         "labels": label_columns,
