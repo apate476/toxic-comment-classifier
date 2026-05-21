@@ -93,23 +93,23 @@ The project uses a toxic comment classification dataset containing online commen
 
 ### Label Columns
 
-| Label | Description |
-|---|---|
-| toxic | General toxic or harmful language |
-| severe_toxic | Strongly toxic language |
-| obscene | Obscene or inappropriate language |
-| threat | Threatening language |
-| insult | Insulting language |
+| Label         | Description                           |
+| ------------- | ------------------------------------- |
+| toxic         | General toxic or harmful language     |
+| severe_toxic  | Strongly toxic language               |
+| obscene       | Obscene or inappropriate language     |
+| threat        | Threatening language                  |
+| insult        | Insulting language                    |
 | identity_hate | Hate speech targeting identity groups |
 
 ### Dataset Files
 
-| File | Purpose |
-|---|---|
-| `data/raw/train.csv` | Training data with comment text and labels |
-| `data/raw/test.csv` | Test data with comment text |
-| `data/raw/test_labels.csv` | Label file for test data |
-| `reports/predictions.csv` | Generated model predictions |
+| File                       | Purpose                                    |
+| -------------------------- | ------------------------------------------ |
+| `data/raw/train.csv`       | Training data with comment text and labels |
+| `data/raw/test.csv`        | Test data with comment text                |
+| `data/raw/test_labels.csv` | Label file for test data                   |
+| `reports/predictions.csv`  | Generated model predictions                |
 
 The training file contains 159,571 labeled comments. For Phase 1, the model uses an 80/20 train-validation split from `train.csv`.
 
@@ -143,6 +143,28 @@ See [PHASE1.md](PHASE1.md) for the detailed Phase 1 checklist and model training
 ### Phase 2: Containerization & Monitoring
 
 See [PHASE2.md](PHASE2.md) for the Phase 2 checklist.
+
+## Phase 2 Additions
+
+This phase introduces configuration management, structured logging, containerization, profiling, and experiment tracking. Full documentation lives in [PHASE2.md](./PHASE2.md).
+
+### Configuration Management with Hydra
+
+All hyperparameters, paths, and model knobs are managed by [Hydra](https://hydra.cc/). The config tree lives in `configs/` with one subfolder per config group (`data/`, `features/`, `model/`, `training/`). Run training with defaults or override any value on the CLI without editing code:
+
+```bash
+# Default baseline run
+python -m toxic_comment_classifier.train_model
+
+# Override hyperparameters
+python -m toxic_comment_classifier.train_model model.C=10 features.max_features=20000
+```
+
+Every run writes a full config snapshot and override list to `outputs/<date>/<time>/.hydra/`, making each experiment reproducible.
+
+### Application Logging
+
+Logging is centralized in `src/toxic_comment_classifier/logging_config.py`. Console output uses `rich.logging.RichHandler` for colored, leveled output during development. A `RotatingFileHandler` writes structured plain-text logs to `logs/training.log` (and `logs/prediction.log` for inference), capped at 5 MB per file with up to 5 backups. Uncaught exceptions are rendered with `rich.traceback.install()` for source context in errors.
 
 ### Phase 3: CI/CD & Deployment
 
@@ -281,19 +303,19 @@ The project ships a reproducible Docker setup so training and inference run iden
 
 ### Image overview
 
-- Base image: `python:3.11-slim-bookworm` (pinned to the Debian *bookworm* release).
+- Base image: `python:3.11-slim-bookworm` (pinned to the Debian _bookworm_ release).
 - Multi-stage build: dependencies are installed into an isolated user-site in a `builder` stage and copied into a clean runtime stage.
 - `.dockerignore` keeps virtualenvs, DVC-pulled datasets, MLflow runs, model artifacts, secrets, and caches out of the build context.
 
 ### Bind mounts (host ↔ container)
 
-| Host path | Container path | Mode | Purpose |
-|---|---|---|---|
-| `./data` | `/app/data` | read-only | DVC-pulled Jigsaw CSVs |
-| `./models` | `/app/models` | read-write | Trained model artifacts |
-| `./mlruns` | `/app/mlruns` | read-write | MLflow run metadata + artifacts |
-| `./configs` | `/app/configs` | read-only | Hydra / YAML configuration |
-| `./reports` | `/app/reports` | read-write | Metrics, predictions, figures |
+| Host path   | Container path | Mode       | Purpose                         |
+| ----------- | -------------- | ---------- | ------------------------------- |
+| `./data`    | `/app/data`    | read-only  | DVC-pulled Jigsaw CSVs          |
+| `./models`  | `/app/models`  | read-write | Trained model artifacts         |
+| `./mlruns`  | `/app/mlruns`  | read-write | MLflow run metadata + artifacts |
+| `./configs` | `/app/configs` | read-only  | Hydra / YAML configuration      |
+| `./reports` | `/app/reports` | read-write | Metrics, predictions, figures   |
 
 ### Build and run
 
@@ -320,27 +342,27 @@ The Phase 1 baseline model uses TF-IDF vectorization with a One-vs-Rest Logistic
 
 ### Model Configuration
 
-| Component | Value |
-|---|---|
-| Feature extraction | TF-IDF |
-| Maximum features | 50,000 |
-| N-gram range | Unigrams and bigrams |
-| Stop words | English |
-| Classifier | One-vs-Rest Logistic Regression |
-| Solver | liblinear |
-| Max iterations | 1000 |
-| Validation split | 20% |
-| Random seed | 42 |
+| Component          | Value                           |
+| ------------------ | ------------------------------- |
+| Feature extraction | TF-IDF                          |
+| Maximum features   | 50,000                          |
+| N-gram range       | Unigrams and bigrams            |
+| Stop words         | English                         |
+| Classifier         | One-vs-Rest Logistic Regression |
+| Solver             | liblinear                       |
+| Max iterations     | 1000                            |
+| Validation split   | 20%                             |
+| Random seed        | 42                              |
 
 ### Validation Metrics
 
-| Metric | Score |
-|---|---:|
-| Micro F1 | 0.6581 |
-| Macro F1 | 0.4738 |
+| Metric          |  Score |
+| --------------- | -----: |
+| Micro F1        | 0.6581 |
+| Macro F1        | 0.4738 |
 | Micro Precision | 0.8865 |
-| Micro Recall | 0.5233 |
-| Hamming Loss | 0.0201 |
+| Micro Recall    | 0.5233 |
+| Hamming Loss    | 0.0201 |
 
 The baseline model shows strong precision, meaning that predicted toxicity labels are usually reliable. The lower recall indicates that the model misses some toxic examples, which is expected for a simple baseline on an imbalanced multi-label text classification dataset.
 
@@ -486,14 +508,14 @@ Before final submission, the repository should contain the completed Phase 1 imp
 
 Important documentation files:
 
-| File | Description |
-|---|---|
-| `README.md` | Main project overview, setup instructions, model summary, and commands |
-| `PHASE1.md` | Phase 1 checklist and deliverables |
-| `PHASE2.md` | Phase 2 checklist |
-| `PHASE3.md` | Phase 3 checklist |
-| `data/README.md` | Data folder documentation |
-| `docs/` | Additional project documentation |
+| File             | Description                                                            |
+| ---------------- | ---------------------------------------------------------------------- |
+| `README.md`      | Main project overview, setup instructions, model summary, and commands |
+| `PHASE1.md`      | Phase 1 checklist and deliverables                                     |
+| `PHASE2.md`      | Phase 2 checklist                                                      |
+| `PHASE3.md`      | Phase 3 checklist                                                      |
+| `data/README.md` | Data folder documentation                                              |
+| `docs/`          | Additional project documentation                                       |
 
 ## Contribution Summary
 

@@ -1,0 +1,18 @@
+# Logistic Regression model configuration.
+# Maps directly to sklearn.linear_model.LogisticRegression kwargs.
+
+name: logreg
+
+# Inverse regularization strength. Smaller = stronger regularization.
+# Default 1.0 matches sklearn's default.
+C: 1.0
+
+# Regularization type. liblinear solver supports l1 and l2.
+penalty: l2
+
+# Optimization algorithm. liblinear works well for small/medium datasets
+# and supports both l1 and l2 penalties.
+solver: liblinear
+
+# Max optimizer iterations. Was 1000 in the hardcoded version.
+max_iter: 1000
