@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import joblib
 import mlflow
@@ -15,7 +15,6 @@ from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_scor
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
-
 
 DATA_PATH = Path("data/raw/train.csv")
 REPORT_DIR = Path("reports/experiments")
@@ -66,7 +65,10 @@ def load_data() -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
     x = df["comment_text"]
     y = df[LABEL_COLUMNS]
 
-    return train_test_split(x, y, test_size=0.2, random_state=42)
+    return cast(
+        tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
+        train_test_split(x, y, test_size=0.2, random_state=42),
+    )
 
 
 def calculate_metrics(y_true: pd.DataFrame, y_pred: Any) -> dict[str, float]:
@@ -74,9 +76,7 @@ def calculate_metrics(y_true: pd.DataFrame, y_pred: Any) -> dict[str, float]:
     return {
         "micro_f1": f1_score(y_true, y_pred, average="micro", zero_division=0),
         "macro_f1": f1_score(y_true, y_pred, average="macro", zero_division=0),
-        "micro_precision": precision_score(
-            y_true, y_pred, average="micro", zero_division=0
-        ),
+        "micro_precision": precision_score(y_true, y_pred, average="micro", zero_division=0),
         "micro_recall": recall_score(y_true, y_pred, average="micro", zero_division=0),
         "hamming_loss": hamming_loss(y_true, y_pred),
     }
