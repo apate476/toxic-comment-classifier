@@ -303,7 +303,7 @@ The project ships a reproducible Docker setup so training and inference run iden
 
 ### Image overview
 
-- Base image: `python:3.11-slim-bookworm` (pinned to the Debian _bookworm_ release).
+- Base image: `python:3.11-slim-bookworm` (pinned to the Debian *bookworm* release).
 - Multi-stage build: dependencies are installed into an isolated user-site in a `builder` stage and copied into a clean runtime stage.
 - `.dockerignore` keeps virtualenvs, DVC-pulled datasets, MLflow runs, model artifacts, secrets, and caches out of the build context.
 
