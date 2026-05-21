@@ -1,15 +1,30 @@
-version: '3.8'
+# Compose V2: the `version` key is obsolete and intentionally omitted.
+# Bind mounts below let containerized runs read/write the same state that
+# host runs do, which is required for the host-vs-container consistency check.
 
 services:
   toxic_comment_classifier:
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile
+    image: toxic_comment_classifier:latest
     container_name: toxic_comment_classifier_app
-    volumes:
-      - ./data:/app/data
-      - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"
+    volumes:
+      # Datasets pulled with `dvc pull` on the host. Read-only inside the
+      # container so containerized runs cannot accidentally mutate raw data.
+      - ./data:/app/data:ro
+      # Trained model artifacts. Read-write so training runs persist outputs.
+      - ./models:/app/models
+      # MLflow run metadata and artifacts. Required for any tracking we add
+      # later to survive container restarts and be visible from the host.
+      - ./mlruns:/app/mlruns
+      # Hydra / YAML configs. Bind-mounting these means editing a config on
+      # the host takes effect on the next container run without a rebuild.
+      - ./configs:/app/configs:ro
+      # Generated metrics and predictions land here; needed for consistency
+      # comparisons between host and container outputs.
+      - ./reports:/app/reports

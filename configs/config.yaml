@@ -1,44 +1,14 @@
-
-# Hydra configuration for toxic_comment_classifier
+# Root Hydra config for toxic_comment_classifier.
+# Composes other configs from group folders (data, features, model, training).
+# Override individual fields on the CLI: python -m toxic_comment_classifier.train_model model.C=10
 
 defaults:
+  - data: jigsaw
+  - features: tfidf
+  - model: logreg
+  - training: default
   - _self_
 
-model:
-  name: default_model
-  type: sklearn
-  parameters:
-    max_depth: 10
-    min_samples_split: 2
-
-data:
-  raw_path: data/raw
-  processed_path: data/processed
-  train_test_split: 0.8
-  random_state: 42
-  val_split: 0.1
-
-training:
-  epochs: 100
-  batch_size: 32
-  learning_rate: 0.001
-  optimizer: adam
-  loss_function: mse
-  early_stopping: true
-  early_stopping_patience: 10
-
-evaluation:
-  metrics:
-    - mse
-    - rmse
-    - mae
-  cv_folds: 5
-
-logging:
-  level: INFO
-  output_dir: logs
-
-paths:
-  models_dir: models
-  logs_dir: logs
-  predictions_dir: predictions
+# Global seed used to derive everything reproducible.
+# training/default.yaml inherits this via interpolation.
+seed: 42

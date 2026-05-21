@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-import argparse
 import json
+import time
 from pathlib import Path
 from typing import Any
 
+import hydra
 import joblib
 import pandas as pd
+from hydra.core.hydra_config import HydraConfig
+from hydra.utils import to_absolute_path
+from omegaconf import DictConfig, OmegaConf
+from rich.traceback import install as install_rich_traceback
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
@@ -16,40 +21,30 @@ from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 
-from toxic_comment_classifier.config import DEFAULT_CONFIG, MODELS_DIR, PROCESSED_DATA_DIR
 from toxic_comment_classifier.logging_config import get_logger, setup_logging
 from toxic_comment_classifier.utils.seed import set_seed
 
 logger = get_logger(__name__)
 
-LABEL_COLUMNS = [
-    "toxic",
-    "severe_toxic",
-    "obscene",
-    "threat",
-    "insult",
-    "identity_hate",
-]
 
-
-def _resolve_train_file(data_path: Path) -> Path:
-    """Return the path to the training dataset."""
+def _resolve_train_file(raw_path: Path, train_filename: str) -> Path:
+    """Return the path to the training dataset, searching common locations."""
     candidates = [
-        data_path / "train.csv" if data_path.is_dir() else data_path,
-        Path("data/processed/train.csv"),
-        Path("data/raw/train.csv"),
+        raw_path / train_filename,
+        Path("data/processed") / train_filename,
+        Path("data/raw") / train_filename,
     ]
 
     for candidate in candidates:
         if candidate.exists():
             return candidate
 
-    raise FileNotFoundError("train.csv was not found in the provided path, data/processed, or data/raw.")
+    raise FileNotFoundError(f"{train_filename} was not found in {raw_path}, data/processed, or data/raw.")
 
 
-def _validate_training_data(df: pd.DataFrame) -> None:
+def _validate_training_data(df: pd.DataFrame, text_column: str, label_columns: list[str]) -> None:
     """Validate that the training dataset contains the required columns."""
-    required_columns = ["comment_text", *LABEL_COLUMNS]
+    required_columns = [text_column, *label_columns]
     missing_columns = [column for column in required_columns if column not in df.columns]
 
     if missing_columns:
@@ -59,22 +54,30 @@ def _validate_training_data(df: pd.DataFrame) -> None:
         raise ValueError("Training data is empty.")
 
 
-def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: float) -> None:
+def train(cfg: DictConfig) -> None:
     """Train and save a baseline multi-label text classification model."""
-    train_file = _resolve_train_file(data_path)
+    # Resolve all paths to absolute. Hydra runs may execute from any cwd,
+    # so we anchor data and output paths to the project root.
+    raw_path = Path(to_absolute_path(cfg.data.raw_path))
+    model_dir = Path(to_absolute_path(cfg.training.model_dir))
+    reports_dir = Path(to_absolute_path(cfg.training.reports_dir))
+
+    train_file = _resolve_train_file(raw_path, cfg.data.train_file)
 
     logger.info("Loading training data from %s", train_file)
     df = pd.read_csv(train_file)
-    _validate_training_data(df)
 
-    texts = df["comment_text"].fillna("")
-    labels = df[LABEL_COLUMNS]
+    label_columns = list(cfg.data.label_columns)
+    _validate_training_data(df, cfg.data.text_column, label_columns)
+
+    texts = df[cfg.data.text_column].fillna("")
+    labels = df[label_columns]
 
     x_train, x_val, y_train, y_val = train_test_split(
         texts,
         labels,
-        test_size=0.2,
-        random_state=DEFAULT_CONFIG.training.seed,
+        test_size=cfg.data.val_split,
+        random_state=cfg.seed,
     )
 
     model = Pipeline(
@@ -82,18 +85,21 @@ def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: fl
             (
                 "tfidf",
                 TfidfVectorizer(
-                    max_features=50_000,
-                    ngram_range=(1, 2),
-                    stop_words="english",
+                    max_features=cfg.features.max_features,
+                    ngram_range=tuple(cfg.features.ngram_range),
+                    stop_words=cfg.features.stop_words,
+                    min_df=cfg.features.min_df,
                 ),
             ),
             (
                 "classifier",
                 OneVsRestClassifier(
                     LogisticRegression(
-                        max_iter=1000,
-                        solver="liblinear",
-                        random_state=DEFAULT_CONFIG.training.seed,
+                        C=cfg.model.C,
+                        penalty=cfg.model.penalty,
+                        solver=cfg.model.solver,
+                        max_iter=cfg.model.max_iter,
+                        random_state=cfg.seed,
                     )
                 ),
             ),
@@ -105,41 +111,48 @@ def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: fl
         len(x_train),
         len(x_val),
     )
+    fit_start = time.perf_counter()
     model.fit(x_train, y_train)
+    fit_elapsed = time.perf_counter() - fit_start
+    logger.info("Model fit completed in %.2fs", fit_elapsed)
 
+    predict_start = time.perf_counter()
     predictions = model.predict(x_val)
+    predict_elapsed = time.perf_counter() - predict_start
+    logger.info("Validation prediction completed in %.2fs", predict_elapsed)
 
     metrics: dict[str, Any] = {
         "model_type": "TF-IDF + OneVsRest Logistic Regression",
         "training_file": str(train_file),
         "rows": int(len(df)),
-        "validation_split": 0.2,
-        "random_state": DEFAULT_CONFIG.training.seed,
-        "labels": LABEL_COLUMNS,
+        "fit_seconds": round(fit_elapsed, 2),
+        "predict_seconds": round(predict_elapsed, 2),
+        "validation_split": cfg.data.val_split,
+        "random_state": cfg.seed,
+        "labels": label_columns,
         "micro_f1": float(f1_score(y_val, predictions, average="micro", zero_division=0)),
         "macro_f1": float(f1_score(y_val, predictions, average="macro", zero_division=0)),
         "micro_precision": float(precision_score(y_val, predictions, average="micro", zero_division=0)),
         "micro_recall": float(recall_score(y_val, predictions, average="micro", zero_division=0)),
         "hamming_loss": float(hamming_loss(y_val, predictions)),
         "hyperparameters": {
-            "tfidf_max_features": 50_000,
-            "tfidf_ngram_range": [1, 2],
-            "tfidf_stop_words": "english",
+            "tfidf_max_features": cfg.features.max_features,
+            "tfidf_ngram_range": list(cfg.features.ngram_range),
+            "tfidf_stop_words": cfg.features.stop_words,
+            "tfidf_min_df": cfg.features.min_df,
             "classifier": "LogisticRegression",
-            "solver": "liblinear",
-            "max_iter": 1000,
-            "epochs": epochs,
-            "batch_size": batch_size,
-            "learning_rate": lr,
+            "C": cfg.model.C,
+            "penalty": cfg.model.penalty,
+            "solver": cfg.model.solver,
+            "max_iter": cfg.model.max_iter,
         },
     }
 
     model_dir.mkdir(parents=True, exist_ok=True)
-    reports_dir = Path("reports")
     reports_dir.mkdir(parents=True, exist_ok=True)
 
-    model_path = model_dir / "baseline_tfidf_logreg.joblib"
-    metrics_path = reports_dir / "baseline_metrics.json"
+    model_path = model_dir / cfg.training.model_filename
+    metrics_path = reports_dir / cfg.training.metrics_filename
 
     joblib.dump(model, model_path)
 
@@ -149,30 +162,21 @@ def train(data_path: Path, model_dir: Path, epochs: int, batch_size: int, lr: fl
     logger.info("Saved model to %s", model_path)
     logger.info("Saved metrics to %s", metrics_path)
 
+    # Hydra writes the composed config and overrides to a run-scoped directory
+    # automatically; log the path so users know where to look.
+    run_dir = HydraConfig.get().runtime.output_dir
+    logger.info("Hydra run artifacts written to %s", run_dir)
 
-def main() -> None:
-    """Run model training from the command line."""
-    cfg = DEFAULT_CONFIG.training
 
-    parser = argparse.ArgumentParser(description="Train the toxic comment classifier.")
-    parser.add_argument("--data-path", type=Path, default=PROCESSED_DATA_DIR)
-    parser.add_argument("--model-dir", type=Path, default=MODELS_DIR)
-    parser.add_argument("--epochs", type=int, default=cfg.epochs)
-    parser.add_argument("--batch-size", type=int, default=cfg.batch_size)
-    parser.add_argument("--learning-rate", type=float, default=cfg.learning_rate)
-    parser.add_argument("--seed", type=int, default=cfg.seed)
-    args = parser.parse_args()
-
+@hydra.main(version_base="1.3", config_path="../../configs", config_name="config")
+def main(cfg: DictConfig) -> None:
+    """Run model training from the command line via Hydra."""
+    install_rich_traceback(show_locals=False)
     setup_logging()
-    set_seed(args.seed)
+    logger.info("Configuration:\n%s", OmegaConf.to_yaml(cfg))
 
-    train(
-        data_path=args.data_path,
-        model_dir=args.model_dir,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.learning_rate,
-    )
+    set_seed(cfg.seed)
+    train(cfg)
 
     logger.info("Training complete")
 

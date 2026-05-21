@@ -1,0 +1,13 @@
+# Training run configuration.
+# Output paths and run-level settings that aren't specific to data/features/model.
+
+name: default
+
+# Path where the trained model artifact is saved.
+# Resolved to an absolute path in train_model.py.
+model_dir: models
+model_filename: baseline_tfidf_logreg.joblib
+
+# Path where metrics JSON is saved.
+reports_dir: reports
+metrics_filename: baseline_metrics.json

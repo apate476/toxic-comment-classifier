@@ -1,0 +1,22 @@
+# Dataset configuration for the Jigsaw toxic comment dataset.
+# Loaded automatically via the defaults list in config.yaml.
+
+name: jigsaw
+
+# Path to the raw training CSV. Resolved relative to project root via
+# hydra.utils.to_absolute_path() in train_model.py.
+raw_path: data/raw
+train_file: train.csv
+
+# Fraction of data held out for validation. 0.2 = 80/20 split.
+val_split: 0.2
+
+# Column names — keep in sync with the CSV schema.
+text_column: comment_text
+label_columns:
+  - toxic
+  - severe_toxic
+  - obscene
+  - threat
+  - insult
+  - identity_hate

@@ -152,3 +152,16 @@ config/local_settings.py
 .dvc/cache
 .dvc/tmp
 .dvc/config.local
+
+# MLflow
+mlruns/*
+mlartifacts/
+!mlruns/.gitkeep
+.history
+
+# Hydra run-scoped output dirs
+outputs/
+models/*.joblib
+
+# Application logs
+logs/
