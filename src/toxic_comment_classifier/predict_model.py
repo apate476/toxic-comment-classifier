@@ -88,7 +88,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    setup_logging()
+    setup_logging(log_filename="prediction.log")
     predict(args.model_path, args.input, args.output)
 
     logger.info("Prediction complete")

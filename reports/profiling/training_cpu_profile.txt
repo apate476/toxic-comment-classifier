@@ -1,0 +1,38 @@
+         19711940 function calls (18995499 primitive calls) in 17.465 seconds
+
+   Ordered by: cumulative time
+   List reduced from 5090 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.035    0.035   17.467   17.467 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/src/toxic_comment_classifier/train_model.py:153(main)
+        1    0.000    0.000   16.280   16.280 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/src/toxic_comment_classifier/train_model.py:62(train)
+     11/1    0.001    0.000   12.969   12.969 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/base.py:1319(wrapper)
+        1    0.000    0.000   12.968   12.968 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/pipeline.py:562(fit)
+        1    0.000    0.000   10.609   10.609 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/pipeline.py:512(_fit)
+        1    0.000    0.000   10.608   10.608 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/joblib/memory.py:325(__call__)
+        1    0.000    0.000   10.608   10.608 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/pipeline.py:1471(_fit_transform_one)
+        1    0.000    0.000   10.608   10.608 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:2078(fit_transform)
+        1    0.217    0.217   10.582   10.582 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:1340(fit_transform)
+        2    2.798    1.399    7.249    3.625 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:1256(_count_vocab)
+   159571    0.194    0.000    3.776    0.000 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:77(_analyze)
+        1    1.350    1.350    3.541    3.541 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:1203(_sort_features)
+        1    0.000    0.000    2.359    2.359 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/multiclass.py:327(fit)
+        1    0.000    0.000    2.330    2.330 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/utils/parallel.py:54(__call__)
+        1    0.000    0.000    2.330    2.330 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/joblib/parallel.py:1969(__call__)
+        8    0.000    0.000    2.330    0.291 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/joblib/parallel.py:1888(_get_sequential_output)
+        6    0.000    0.000    2.329    0.388 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/utils/parallel.py:140(__call__)
+        6    0.000    0.000    2.328    0.388 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/multiclass.py:81(_fit_binary)
+        6    0.000    0.000    2.321    0.387 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/linear_model/_logistic.py:1086(fit)
+        6    2.195    0.366    2.230    0.372 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/svm/_base.py:1074(_fit_liblinear)
+   159571    1.102    0.000    2.207    0.000 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:247(_word_ngrams)
+      506    2.158    0.004    2.179    0.004 {built-in method builtins.sorted}
+        1    0.000    0.000    1.329    1.329 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/pipeline.py:697(predict)
+        1    0.000    0.000    1.322    1.322 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:2110(transform)
+        1    0.000    0.000    1.318    1.318 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/sklearn/feature_extraction/text.py:1408(transform)
+        1    0.007    0.007    1.293    1.293 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/joblib/numpy_pickle.py:474(dump)
+        1    0.000    0.000    1.286    1.286 /opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/pickle.py:476(dump)
+ 300929/1    0.113    0.000    1.286    1.286 /Users/mohammadtahapatil/Downloads/toxic-comment-classifier/.venv/lib/python3.11/site-packages/joblib/numpy_pickle.py:360(save)
+ 300929/1    0.374    0.000    1.286    1.286 /opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/pickle.py:535(save)
+  50042/1    0.066    0.000    1.286    1.286 /opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/pickle.py:621(save_reduce)
+
+

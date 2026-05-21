@@ -1,0 +1,53 @@
+[
+  {
+    "experiment_name": "baseline_tfidf_logreg",
+    "name": "baseline_tfidf_logreg",
+    "max_features": 50000,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "C": 1.0,
+    "class_weight": null,
+    "micro_f1": 0.6581333333333333,
+    "macro_f1": 0.4738324026663516,
+    "micro_precision": 0.8864942528735632,
+    "micro_recall": 0.5233248515691263,
+    "hamming_loss": 0.02008459971800094,
+    "model_path": "models/baseline_tfidf_logreg.joblib"
+  },
+  {
+    "experiment_name": "smaller_tfidf_logreg",
+    "name": "smaller_tfidf_logreg",
+    "max_features": 25000,
+    "ngram_range": [
+      1,
+      1
+    ],
+    "C": 1.0,
+    "class_weight": null,
+    "micro_f1": 0.67011393514461,
+    "macro_f1": 0.48865880962249414,
+    "micro_precision": 0.8816881918819188,
+    "micro_recall": 0.540429742719819,
+    "hamming_loss": 0.019656378923181367,
+    "model_path": "models/smaller_tfidf_logreg.joblib"
+  },
+  {
+    "experiment_name": "balanced_tfidf_logreg",
+    "name": "balanced_tfidf_logreg",
+    "max_features": 50000,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "C": 1.0,
+    "class_weight": "balanced",
+    "micro_f1": 0.6774413065668595,
+    "macro_f1": 0.5481753879761516,
+    "micro_precision": 0.565625,
+    "micro_recall": 0.8443596268023749,
+    "hamming_loss": 0.02970390098699671,
+    "model_path": "models/balanced_tfidf_logreg.joblib"
+  }
+]

@@ -1,0 +1,16 @@
+# TF-IDF vectorizer configuration.
+# Maps directly to sklearn.feature_extraction.text.TfidfVectorizer kwargs.
+
+name: tfidf
+
+# Maximum vocabulary size. Cap on vocabulary growth; controls memory + speed.
+max_features: 50000
+
+# N-gram range as a [min, max] list. (1, 2) means unigrams + bigrams.
+ngram_range: [1, 2]
+
+# Drop English stop words like "the", "a", "is".
+stop_words: english
+
+# Ignore terms appearing in fewer than this many documents.
+min_df: 1
