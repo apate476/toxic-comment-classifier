@@ -196,3 +196,7 @@ xxhash==3.7.0
 yarl==1.23.0
 zc.lockfile==4.0
 zipp==3.23.1
+
+mlflow
+memory-profiler
+matplotlib

@@ -1,0 +1,6 @@
+Training Memory Profile
+
+Starting memory usage: 163.66 MiB
+Peak memory usage: 957.59 MiB
+Memory increase: 793.94 MiB
+Number of memory samples: 17
