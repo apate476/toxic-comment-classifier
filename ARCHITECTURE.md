@@ -124,6 +124,85 @@ flowchart LR
 
 ---
 
+## Operational Architecture (Phase 2)
+
+Phase 1 answers *"can we train a model?"*. Phase 2 answers *"can we run, track, debug, and reproduce that training reliably?"*. It does this without changing the model code — five operational tools wrap the existing `train_model.py` entrypoint.
+
+```mermaid
+flowchart TB
+    subgraph Config["Configuration - Hydra"]
+        CFG["configs/<br/>config.yaml + data/ features/ model/ training/"]
+        SNAP[/"outputs/&lt;date&gt;/&lt;time&gt;/.hydra/<br/>config + overrides snapshot"/]
+    end
+
+    subgraph Run["Training Run"]
+        ENTRY["train_model.py :: main()"]
+        LOGCFG["logging_config.py<br/>setup_logging()"]
+    end
+
+    subgraph Observability["Observability"]
+        LOGS[/"logs/training.log<br/>(Rich + RotatingFileHandler)"/]
+        PROF[/"reports/profiling/<br/>cpu + memory profiles"/]
+    end
+
+    subgraph Tracking["Experiment Tracking - MLflow"]
+        ML[("mlruns/<br/>params · metrics · artifacts")]
+        EXP[/"reports/experiments/<br/>experiment_results.csv/json"/]
+    end
+
+    subgraph Outputs["Persisted Artifacts"]
+        MODEL[/"models/*.joblib"/]
+        METRICS[/"reports/baseline_metrics.json"/]
+    end
+
+    subgraph Container["Containerization - Docker"]
+        IMG[("dockerfiles/Dockerfile<br/>python:3.11-slim, multi-stage")]
+        COMPOSE["docker-compose.yaml<br/>bind mounts: data models mlruns configs reports"]
+    end
+
+    CFG -->|"composed at runtime"| ENTRY
+    ENTRY -->|"snapshot every run"| SNAP
+    ENTRY --> LOGCFG --> LOGS
+    ENTRY --> MODEL
+    ENTRY --> METRICS
+    ENTRY -->|"log_param / log_metric / log_artifact"| ML
+    ML --> EXP
+    ENTRY -.->|"cProfile / memory-profiler<br/>scripts/profile_*.py"| PROF
+    COMPOSE -.->|"runs ENTRY identically on any host"| ENTRY
+    IMG --> COMPOSE
+
+    classDef cfg fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef run fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef obs fill:#e1f5ff,stroke:#0277bd,color:#01579b
+    classDef track fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef out fill:#e8f5e9,stroke:#1b5e20,color:#0d3a0d
+    class CFG,SNAP cfg
+    class ENTRY,LOGCFG run
+    class LOGS,PROF obs
+    class ML,EXP track
+    class MODEL,METRICS out
+    class IMG,COMPOSE out
+```
+
+**How to read this:** a training run starts when Hydra composes a config from `configs/` and snapshots it under `outputs/`. `train_model.main()` initializes logging, trains the model, and writes the model artifact plus metrics. The same run logs parameters, metrics, and the artifact to MLflow's `mlruns/` store. The profiling scripts attach to the *same* `main()` entrypoint, so profiling measures exactly what production training does. Docker wraps the whole flow, bind-mounting `data/`, `models/`, `mlruns/`, `configs/`, and `reports/` so containerized runs produce identical results to local runs.
+
+### Responsibility Split
+
+| Layer | Tool | Question it answers |
+| --- | --- | --- |
+| Configuration | Hydra / OmegaConf | *What hyperparameters ran?* |
+| Execution | `train_model.py` | *Train the model.* |
+| Logging | Rich + RotatingFileHandler | *What happened during the run?* |
+| Tracking | MLflow | *What were the results, and how do runs compare?* |
+| Profiling | cProfile / memory-profiler | *How fast and how heavy was the run?* |
+| Containerization | Docker / Compose | *Does it behave the same everywhere?* |
+
+### Reproducibility Guarantee
+
+Every run is reconstructable from disk: `outputs/<date>/<time>/.hydra/config.yaml` records the exact composed config, `mlruns/` records the params/metrics/artifact, and `requirements.txt` pins every dependency version. A teammate can read the config snapshot for any saved model and reproduce it exactly — locally or in the container.
+
+---
+
 ## Team Workflow
 
 ```mermaid

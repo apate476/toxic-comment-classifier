@@ -336,6 +336,245 @@ docker compose run --rm --entrypoint bash toxic_comment_classifier
 
 > Prerequisite: Docker Desktop (or an equivalent Docker Engine) must be running. The repo expects `data/raw/*.csv` to already be DVC-pulled on the host because `data/` is bind-mounted into the container rather than baked into the image.
 
+## Phase 2 Tooling Guide
+
+Phase 2 adds five operational tools on top of the Phase 1 baseline: configuration management (Hydra), experiment tracking (MLflow), structured logging (Rich), profiling (cProfile / memory-profiler), and containerization (Docker). This section documents how to set up and use each one. The full deliverable checklist lives in [PHASE2.md](PHASE2.md); system diagrams live in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+### Documentation Map
+
+| Topic                            | Where to look                                                       |
+| --------------------------------- | ------------------------------------------------------------------ |
+| Project overview, setup, commands | This README                                                         |
+| Phase 2 tool usage                | This section                                                        |
+| System architecture + diagrams    | [ARCHITECTURE.md](ARCHITECTURE.md)                                  |
+| Phase deliverable checklists       | [PHASE1.md](PHASE1.md) / [PHASE2.md](PHASE2.md) / [PHASE3.md](PHASE3.md) |
+| Contribution workflow              | [CONTRIBUTING.md](CONTRIBUTING.md)                                  |
+
+### Configuration Management (Hydra)
+
+All hyperparameters, paths, and model knobs are managed by **Hydra** (`hydra-core==1.3.2`). No code edits are needed to run a new experiment — every value is defined in YAML under `configs/` and can be overridden from the command line.
+
+**Config layout**
+
+```text
+configs/
+├── config.yaml           # Root config: defaults list + global seed
+├── data/jigsaw.yaml      # Dataset paths, split ratio, column names
+├── features/tfidf.yaml   # TF-IDF vectorizer settings
+├── model/logreg.yaml     # Logistic Regression hyperparameters
+└── training/default.yaml # Output paths and filenames
+```
+
+The root `config.yaml` composes the groups through a `defaults` list and sets a global `seed: 42`.
+
+**Running with different configurations**
+
+```bash
+# 1. Default baseline run (C=1.0, max_features=50000, ngram_range=[1,2])
+python -m toxic_comment_classifier.train_model
+
+# 2. Stronger regularization with a smaller vocabulary
+python -m toxic_comment_classifier.train_model model.C=10 features.max_features=20000
+
+# 3. Unigrams only
+python -m toxic_comment_classifier.train_model features.ngram_range=[1,1]
+
+# 4. Override multiple groups at once
+python -m toxic_comment_classifier.train_model model.C=0.5 model.penalty=l1 data.val_split=0.1
+```
+
+Override syntax is `key=value` or `group.subkey=value` — no argparse flags, no code changes. Every run writes a full config snapshot to `outputs/<date>/<time>/.hydra/config.yaml` and the override list to `overrides.yaml`, so each experiment is reproducible from disk.
+
+### Experiment Tracking (MLflow)
+
+Experiment tracking uses **MLflow** (`mlflow==3.11.1`) with a local file-based tracking store. No server setup is required — runs are written to the `mlruns/` directory at the repo root.
+
+**Setup**
+
+MLflow is installed with the project dependencies (`pip install -r requirements.txt`). The tracking URI and experiment name are configured in code (`scripts/run_mlflow_experiments.py`):
+
+```python
+mlflow.set_tracking_uri("mlruns")
+mlflow.set_experiment("toxic-comment-phase2")
+```
+
+**Running tracked experiments**
+
+```bash
+# Trains and logs 3 experiment configurations to MLflow
+python scripts/run_mlflow_experiments.py
+```
+
+This trains three pre-defined configurations — `baseline_tfidf_logreg`, `smaller_tfidf_logreg`, and `balanced_tfidf_logreg` — and for each run logs the hyperparameters (`max_features`, `ngram_range`, `C`, `class_weight`), the metrics (`micro_f1`, `macro_f1`, `micro_precision`, `micro_recall`, `hamming_loss`), and the trained model artifact. A combined comparison is also written to `reports/experiments/experiment_results.csv` and `.json`.
+
+**Viewing and comparing runs**
+
+```bash
+# Launch the MLflow UI, then open http://localhost:5000
+mlflow ui
+
+# Generate comparison charts from the logged results
+python scripts/plot_experiment_results.py
+```
+
+**Selecting the best model:** compare runs in the MLflow UI (or the `experiment_results.csv` table) and pick the configuration with the highest **macro F1** — macro F1 weights the rare labels (`threat`, `identity_hate`) equally with common ones, which matters for this imbalanced multi-label dataset.
+
+### Logging
+
+Logging is centralized in `src/toxic_comment_classifier/logging_config.py`. The `setup_logging()` function attaches two handlers to the root logger:
+
+- **Console** — `rich.logging.RichHandler` with colored levels, timestamps, and pretty tracebacks (for interactive development).
+- **File** — `RotatingFileHandler` writing plain text to `logs/`, capped at 5 MB per file with up to 5 backups (~25 MB total, so disk usage is bounded).
+
+Both `train_model.py` and `predict_model.py` call `setup_logging()` once at the start of `main()`. Inference logs route to a separate file by passing `setup_logging(log_filename="prediction.log")`.
+
+**Usage example**
+
+```python
+import logging
+from toxic_comment_classifier.logging_config import setup_logging
+
+setup_logging()                       # training -> logs/training.log
+logger = logging.getLogger(__name__)
+
+logger.info("Loading training data from %s", data_path)
+logger.warning("Found %d rows with empty comment_text", n_empty)
+logger.error("Validation failed: missing label column", exc_info=True)
+```
+
+**Log levels:** `INFO` for normal progress (paths, timing, completion), `WARNING` for recoverable issues, `ERROR` for caught exceptions with context, `DEBUG` for verbose tracing (disabled by default). The composed Hydra config is logged at the top of every run, so any teammate reading `logs/training.log` can see exactly which hyperparameters produced the saved model.
+
+### Debugging & Profiling
+
+**Interactive debugging.** Drop a breakpoint anywhere in the code and run the entrypoint normally:
+
+```python
+breakpoint()          # built-in pdb; or: import ipdb; ipdb.set_trace()
+```
+
+To debug inside the container, run with an interactive shell:
+
+```bash
+docker compose run --rm --entrypoint bash toxic_comment_classifier
+```
+
+**Container smoke test.** `scripts/docker_smoke.py` verifies package import, config path resolution, bind-mount visibility, dependency versions, and that DVC-pulled data is reachable from inside the container:
+
+```bash
+docker compose run --rm --entrypoint python toxic_comment_classifier scripts/docker_smoke.py
+```
+
+**CPU profiling.** `scripts/profile_training.py` wraps the training pipeline in `cProfile` and writes both a binary and a human-readable report:
+
+```bash
+python scripts/profile_training.py
+# -> reports/profiling/training_cpu_profile.prof   (open with snakeviz/pstats)
+# -> reports/profiling/training_cpu_profile.txt    (top 30 functions by cumulative time)
+```
+
+**Memory profiling.** `scripts/profile_memory.py` samples peak memory during training using `memory-profiler`:
+
+```bash
+python scripts/profile_memory.py
+# -> reports/profiling/training_memory_profile.txt  (starting / peak / increase MiB)
+```
+
+### Performance Guide
+
+Use this loop to profile and optimize:
+
+1. **Measure first.** Run `scripts/profile_training.py` and `scripts/profile_memory.py` to capture a baseline before changing anything.
+2. **Find the bottleneck.** Open `training_cpu_profile.txt` (sorted by cumulative time) — for this TF-IDF + Logistic Regression pipeline, vectorization and the per-label classifier `fit` dominate runtime.
+3. **Optimize one thing.** Typical levers: lower `features.max_features`, narrow `features.ngram_range`, or adjust the solver. Change one config value at a time.
+4. **Re-measure.** Re-run the profiler and compare. Training timings are also persisted to `reports/baseline_metrics.json` as `fit_seconds` / `predict_seconds`, and across MLflow runs you can chart them with `scripts/plot_experiment_results.py`.
+5. **Document the result.** Record the before/after numbers so the optimization is justified, not assumed.
+
+### How the Tools Work Together
+
+A single training run touches every Phase 2 tool in sequence:
+
+```text
+configs/ (Hydra)
+   │  composes cfg at runtime, snapshots to outputs/<date>/<time>/.hydra/
+   ▼
+train_model.py  ──▶  logging_config.py  ──▶  logs/training.log  (Rich + rotating file)
+   │
+   ├──▶  reads data from data/raw/  (DVC-pulled, bind-mounted in Docker)
+   │
+   ├──▶  MLflow logs params + metrics + model artifact ──▶  mlruns/
+   │
+   └──▶  writes models/*.joblib  +  reports/baseline_metrics.json
+
+Docker  wraps the whole pipeline so it runs identically on any host.
+cProfile / memory-profiler  attach to the same train_model.main() entrypoint.
+```
+
+In short: **Hydra** decides *what* runs, **logging** records *what happened*, **MLflow** records *what the results were*, **profiling** measures *how fast/heavy it was*, and **Docker** guarantees it all behaves the same everywhere.
+
+### Examples — Common Workflows
+
+```bash
+# Full local setup
+make dev
+
+# Baseline training run (default config)
+make train
+
+# Experiment sweep with overrides
+python -m toxic_comment_classifier.train_model model.C=10 features.max_features=20000
+
+# Tracked multi-experiment comparison
+python scripts/run_mlflow_experiments.py && mlflow ui
+
+# Profile the pipeline
+python scripts/profile_training.py
+python scripts/profile_memory.py
+
+# Containerized training
+docker compose build && docker compose up
+```
+
+### Troubleshooting
+
+| Symptom                                          | Likely cause                              | Fix                                                                                          |
+| ------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `ModuleNotFoundError: toxic_comment_classifier`   | Package not installed in editable mode    | Run `pip install -e .` (or `make install`); or prefix commands with `PYTHONPATH=src`         |
+| `Cannot find primary config 'config'` (Hydra)     | Command run from outside the repo root    | `cd` to the repo root before running `train_model`                                          |
+| Profiling scripts can't import the package        | Editable install missing                  | `pip install -e .`, then run scripts from the repo root                                      |
+| `No module named memory_profiler`                 | Profiling dependency not installed        | `pip install memory-profiler` (included in `requirements.txt`)                               |
+| `mlflow ui` fails — port 5000 in use              | Another process holds the port            | `mlflow ui --port 5001`                                                                       |
+| MLflow runs don't appear in the UI                | UI started from a different directory     | Run `mlflow ui` from the repo root so it reads `./mlruns`                                    |
+| `dvc pull` fails with an auth error               | Google Drive credentials not configured   | Set local `gdrive_client_id` / `gdrive_client_secret`, then re-run `dvc pull`                |
+| Docker run can't find `data/raw/*.csv`            | Data not DVC-pulled on the host           | Run `dvc pull` on the host first — `data/` is bind-mounted, not baked into the image         |
+| `docker compose` build fails — Docker not running | Docker Desktop is stopped                 | Start Docker Desktop and retry                                                                |
+| `pre-commit` blocks a commit                      | ruff / mypy found issues                  | Run `make format` then `make lint`; fix remaining type errors before committing              |
+
+### Version Compatibility
+
+The project targets **Python 3.11+**. All runtime versions are pinned in `requirements.txt`; development tools are pinned in `requirements_dev.txt`. Key versions:
+
+| Tool            | Version    | Purpose                                  |
+| --------------- | ---------- | ---------------------------------------- |
+| Python          | 3.11+      | Runtime                                  |
+| numpy           | 2.4.x      | Numerical computing                      |
+| pandas          | 2.3.x      | Data loading / manipulation              |
+| scikit-learn    | 1.8.x      | TF-IDF, Logistic Regression, metrics     |
+| joblib          | 1.5.x      | Model persistence                        |
+| hydra-core      | 1.3.2      | Configuration management                 |
+| omegaconf       | 2.3.x      | Config object / type system              |
+| mlflow          | 3.11.x     | Experiment tracking                      |
+| dvc             | 3.67.x     | Data versioning (with `dvc-gdrive`)      |
+| rich            | 15.0.x     | Console logging / tracebacks             |
+| memory-profiler | latest     | Memory profiling                         |
+| matplotlib      | 3.10.x     | Experiment comparison plots              |
+| pytest          | 9.0.x      | Test runner                              |
+| ruff            | 0.15.x     | Lint + format                            |
+| mypy            | 1.20.x     | Static type checking                     |
+| pre-commit      | 4.6.x      | Git hook automation                      |
+| Docker          | 24+ engine | Containerization                         |
+
+> Reproduce the exact environment with `pip install -r requirements.txt`. If you upgrade a pinned package, re-run `make test` and the profiling scripts to confirm nothing regressed.
+
 ## Baseline Model Performance
 
 The Phase 1 baseline model uses TF-IDF vectorization with a One-vs-Rest Logistic Regression classifier. The model was trained on `data/raw/train.csv`, which contains 159,571 labeled comments, using an 80/20 train-validation split.
@@ -390,12 +629,18 @@ Future work may include experimenting with transformer-based models such as Dist
 - **mypy** - Static type checking
 - **pre-commit** - Git hook automation
 
-### Future MLOps Tools
+### MLOps & Experiment Tooling (Phase 2)
 
-- **Docker** - Containerized execution
-- **FastAPI** - Model serving API
-- **MLflow** - Experiment tracking
-- **GitHub Actions** - CI/CD automation
+- **Docker / Docker Compose** - Reproducible containerized training and inference
+- **MLflow** - Experiment tracking for parameters, metrics, and model artifacts
+- **Hydra / OmegaConf** - Hierarchical configuration management with CLI overrides
+- **Rich** - Colored, leveled console logging and pretty tracebacks
+- **cProfile + memory-profiler** - CPU and memory profiling of the training pipeline
+
+### Planned (Phase 3)
+
+- **FastAPI / Uvicorn** - Real-time model serving API
+- **GitHub Actions** - CI/CD automation (lint, type-check, test on every PR)
 
 ## Project Structure
 
