@@ -1,0 +1,18 @@
+# MLflow tracking configuration.
+# Composed automatically via the defaults list in config.yaml.
+
+# Where MLflow writes runs. The default is a file-based store under the
+# project root, which is bind-mounted into the Docker container so runs
+# persist across container restarts. Override at the CLI to point at a
+# remote tracking server, e.g.:
+#   python -m toxic_comment_classifier.train_model mlflow.tracking_uri=http://localhost:5000
+tracking_uri: file:./mlruns
+
+# Experiment name. Runs are grouped under this name in the MLflow UI.
+experiment_name: toxic-comment-baseline
+
+# Human-readable run name. Set to null to let MLflow auto-generate one.
+run_name: null
+
+# Toggle to disable MLflow logging entirely (useful for fast dry-runs).
+enabled: true

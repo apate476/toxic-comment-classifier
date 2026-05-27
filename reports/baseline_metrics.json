@@ -1,9 +1,9 @@
 {
   "model_type": "TF-IDF + OneVsRest Logistic Regression",
-  "training_file": "/Users/arya/Documents/SE489/toxic-comment-classifier/toxic_comment_classifier/data/raw/train.csv",
+  "training_file": "/app/data/raw/train.csv",
   "rows": 159571,
-  "fit_seconds": 9.13,
-  "predict_seconds": 0.71,
+  "fit_seconds": 9.92,
+  "predict_seconds": 0.7,
   "validation_split": 0.2,
   "random_state": 42,
   "labels": [
@@ -14,13 +14,13 @@
     "insult",
     "identity_hate"
   ],
-  "micro_f1": 0.6581333333333333,
-  "macro_f1": 0.4738324026663516,
-  "micro_precision": 0.8864942528735632,
-  "micro_recall": 0.5233248515691263,
-  "hamming_loss": 0.02008459971800094,
+  "micro_f1": 0.6650943396226415,
+  "macro_f1": 0.48584884579274906,
+  "micro_precision": 0.8703703703703703,
+  "micro_recall": 0.5381679389312977,
+  "hamming_loss": 0.020021933260222467,
   "hyperparameters": {
-    "tfidf_max_features": 50000,
+    "tfidf_max_features": 2000,
     "tfidf_ngram_range": [
       1,
       2
@@ -31,6 +31,6 @@
     "C": 1.0,
     "penalty": "l2",
     "solver": "liblinear",
-    "max_iter": 1000
+    "max_iter": 100
   }
 }

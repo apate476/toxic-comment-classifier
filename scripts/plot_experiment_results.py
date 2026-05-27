@@ -7,7 +7,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
 RESULTS_PATH = Path("reports/experiments/experiment_results.csv")
 OUTPUT_PATH = Path("reports/experiments/experiment_micro_f1_comparison.png")
 

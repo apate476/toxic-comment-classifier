@@ -7,6 +7,7 @@ defaults:
   - features: tfidf
   - model: logreg
   - training: default
+  - mlflow: local
   - _self_
 
 # Global seed used to derive everything reproducible.
