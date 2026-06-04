@@ -8,7 +8,6 @@ from memory_profiler import memory_usage
 
 from toxic_comment_classifier.train_model import main
 
-
 PROFILE_DIR = Path("reports/profiling")
 MEMORY_REPORT = PROFILE_DIR / "training_memory_profile.txt"
 

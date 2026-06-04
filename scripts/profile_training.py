@@ -8,7 +8,6 @@ from pathlib import Path
 
 from toxic_comment_classifier.train_model import main
 
-
 PROFILE_DIR = Path("reports/profiling")
 PROFILE_OUTPUT = PROFILE_DIR / "training_cpu_profile.prof"
 PROFILE_TEXT = PROFILE_DIR / "training_cpu_profile.txt"

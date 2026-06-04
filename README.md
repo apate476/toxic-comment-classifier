@@ -1,13 +1,13 @@
 ## Scope & Objectives
 
 **Problem Statement:**
-Many online platforms struggle to moderate toxic user-generated content at scale. This project builds an automated multi-label toxic comment classifier using DistilBERT to detect six categories of toxicity simultaneously.
+Many online platforms struggle to moderate toxic user-generated content at scale. This project builds an automated multi-label toxic comment classifier that detects six categories of toxicity simultaneously, delivered across three phases: a reproducible TF-IDF + Logistic Regression baseline (Phase 1), the surrounding MLOps tooling — containerization, configuration management, experiment tracking, and structured logging (Phase 2), and a fine-tuned DistilBERT model served behind a FastAPI inference endpoint with CI/CD (Phase 3).
 
 **Goals:**
 
-- Fine-tune DistilBERT on the Jigsaw dataset for multi-label classification
-- Deploy a FastAPI inference endpoint for real-time predictions
-- Establish a reproducible MLOps pipeline with MLflow, DVC, and GitHub Actions CI/CD
+- **Phase 1** — Train a reproducible TF-IDF + One-vs-Rest Logistic Regression baseline on the Jigsaw dataset for multi-label classification ✅
+- **Phase 2** — Establish a reproducible MLOps pipeline with Hydra, MLflow, DVC, Docker, profiling, and structured logging ✅
+- **Phase 3 (roadmap)** — Fine-tune DistilBERT on the Jigsaw dataset, deploy a FastAPI inference endpoint for real-time predictions, and add GitHub Actions CI/CD
 
 **Success Metrics:**
 
@@ -23,12 +23,15 @@ Many online platforms struggle to moderate toxic user-generated content at scale
 Online platforms receive millions of user comments daily, making manual moderation impossible at scale. Toxic content left unmoderated leads to user churn, reputational damage, and potential legal liability. An automated classifier that can detect multiple forms of toxicity simultaneously provides a scalable solution for real-time content moderation.
 
 **Technical Approach:**
-This project fine-tunes DistilBERT, a lightweight transformer model that retains approximately 97% of BERT's language understanding while being significantly faster and smaller. The task is framed as multi-label classification, meaning a single comment can simultaneously belong to multiple toxicity categories. A 6-unit sigmoid output head replaces the default classification head to support this. The model is trained on the Jigsaw Toxic Comment Classification dataset consisting of approximately 159,000 Wikipedia talk page comments labeled across 6 toxicity categories.
+The task is framed as multi-label classification, meaning a single comment can simultaneously belong to multiple toxicity categories. The Phase 1 deliverable is a TF-IDF + One-vs-Rest Logistic Regression baseline trained on the Jigsaw Toxic Comment Classification dataset (~159,000 Wikipedia talk-page comments labeled across 6 toxicity categories). Phase 3 will replace the classifier with a fine-tuned DistilBERT model — a lightweight transformer that retains ~97% of BERT's language understanding at a fraction of the size — using a 6-unit sigmoid output head for the multi-label task.
 
-The MLOps infrastructure prioritizes reproducibility and collaboration. MLflow tracks all experiment parameters, metrics, and model artifacts. DVC with a Google Drive remote handles data versioning. GitHub Actions powers CI/CD, running linting via ruff, type checking via mypy, and tests on every pull request. All feature development occurs on the dev branch via short-lived feature branches, with main reserved for end of phase merges.
+The MLOps infrastructure prioritizes reproducibility and collaboration. MLflow tracks all experiment parameters, metrics, and model artifacts. DVC with a Google Drive remote handles data versioning. GitHub Actions powers CI/CD (Phase 3), running linting via ruff, type checking via mypy, and tests on every pull request. All feature development occurs on the dev branch via short-lived feature branches, with main reserved for end of phase merges.
 
-**Expected Outcomes:**
-By the end of Phase 1 the project will deliver a trained DistilBERT multi-label classifier with logged metrics and versioned model artifacts, a FastAPI endpoint for real-time toxicity predictions, a fully reproducible MLOps pipeline, and comprehensive documentation covering data handling, model architecture, and API usage.
+**Expected Outcomes by Phase:**
+
+- **Phase 1 (delivered):** Reproducible TF-IDF + Logistic Regression baseline with logged metrics, a versioned model artifact, and documented data handling.
+- **Phase 2 (delivered):** Containerized training environment, Hydra config management, MLflow experiment tracking, profiling reports, and structured logging.
+- **Phase 3 (roadmap):** Fine-tuned DistilBERT classifier, FastAPI real-time inference endpoint, and GitHub Actions CI/CD on every PR.
 
 ## Dataset Selection
 
@@ -58,9 +61,9 @@ By the end of Phase 1 the project will deliver a trained DistilBERT multi-label 
 
 ## Model Considerations
 
-- DistilBERT with a 6-unit sigmoid output head — best suited for multi-label text classification given its strong natural language understanding from pretraining
-- TF-IDF + Logistic Regression — lightweight baseline suitable for establishing a performance floor quickly
-- TF-IDF + LightGBM — stronger classical baseline that handles non-linear feature interactions better than logistic regression
+- **TF-IDF + One-vs-Rest Logistic Regression** *(Phase 1, delivered)* — lightweight baseline that establishes a performance floor quickly and trains end-to-end in seconds on CPU.
+- **TF-IDF + LightGBM** *(optional Phase 2 comparison)* — stronger classical baseline that handles non-linear feature interactions better than logistic regression.
+- **DistilBERT with a 6-unit sigmoid output head** *(Phase 3 roadmap)* — transformer model whose pretrained language understanding is expected to lift recall on the rare labels (`threat`, `identity_hate`); requires GPU access and replaces the sklearn pipeline.
 
 # toxic_comment_classifier
 
@@ -479,12 +482,19 @@ python scripts/profile_memory.py
 # -> reports/profiling/training_memory_profile.txt  (starting / peak / increase MiB)
 ```
 
+**Framework profiling (Scalene).** `scripts/profile_scalene.py` runs training under [Scalene](https://github.com/plasma-umass/scalene), which attributes time spent inside C extensions (TF-IDF, BLAS) back to the originating Python line — something `cProfile` cannot do for this sklearn pipeline:
+
+```bash
+python scripts/profile_scalene.py
+# -> reports/profiling/training_scalene_profile.html   (line-by-line CPU + memory)
+```
+
 ### Performance Guide
 
 Use this loop to profile and optimize:
 
-1. **Measure first.** Run `scripts/profile_training.py` and `scripts/profile_memory.py` to capture a baseline before changing anything.
-2. **Find the bottleneck.** Open `training_cpu_profile.txt` (sorted by cumulative time) — for this TF-IDF + Logistic Regression pipeline, vectorization and the per-label classifier `fit` dominate runtime.
+1. **Measure first.** Run `scripts/profile_training.py`, `scripts/profile_memory.py`, and `scripts/profile_scalene.py` to capture a baseline before changing anything. Each tool reports something the others miss — see PHASE2.md §3 for the matrix.
+2. **Find the bottleneck.** Open `training_cpu_profile.txt` for the cProfile cumulative view, or the Scalene HTML report for line-level CPU + memory attribution inside sklearn / NumPy. For this TF-IDF + Logistic Regression pipeline, vectorization and the per-label classifier `fit` dominate runtime.
 3. **Optimize one thing.** Typical levers: lower `features.max_features`, narrow `features.ngram_range`, or adjust the solver. Change one config value at a time.
 4. **Re-measure.** Re-run the profiler and compare. Training timings are also persisted to `reports/baseline_metrics.json` as `fit_seconds` / `predict_seconds`, and across MLflow runs you can chart them with `scripts/plot_experiment_results.py`.
 5. **Document the result.** Record the before/after numbers so the optimization is justified, not assumed.
@@ -529,6 +539,7 @@ python scripts/run_mlflow_experiments.py && mlflow ui
 # Profile the pipeline
 python scripts/profile_training.py
 python scripts/profile_memory.py
+python scripts/profile_scalene.py
 
 # Containerized training
 docker compose build && docker compose up
