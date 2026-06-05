@@ -25,6 +25,11 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: toxic-comment-classifier:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run --rm toxic-comment-classifier:latest python -c "import toxic_comment_classifier; print('OK')"
