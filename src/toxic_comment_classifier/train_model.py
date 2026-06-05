@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import hydra
 import joblib
+import mlflow
 import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import to_absolute_path
@@ -52,6 +53,38 @@ def _validate_training_data(df: pd.DataFrame, text_column: str, label_columns: l
 
     if df.empty:
         raise ValueError("Training data is empty.")
+
+
+def _resolve_tracking_uri(tracking_uri: str) -> str:
+    """Resolve a Hydra-configured MLflow tracking URI.
+
+    Relative `file:` URIs are anchored to the project root so MLflow writes
+    to the same `mlruns/` directory regardless of Hydra's run-time cwd.
+    Remote URIs (http, https, sqlite, databricks, ...) pass through unchanged.
+    """
+    if tracking_uri.startswith("file:"):
+        return cast(str, to_absolute_path(tracking_uri.removeprefix("file:")))
+    return tracking_uri
+
+
+def _flatten_params(cfg: DictConfig) -> dict[str, Any]:
+    """Flatten the composed Hydra config into dot-notation keys for MLflow."""
+    container = OmegaConf.to_container(cfg, resolve=True)
+    flat: dict[str, Any] = {}
+
+    def _walk(prefix: str, node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                _walk(f"{prefix}.{key}" if prefix else key, value)
+        elif isinstance(node, list):
+            flat[prefix] = str(node)
+        else:
+            flat[prefix] = node
+
+    _walk("", container)
+    # Strip mlflow.* meta keys; mlflow rejects its own reserved namespace
+    # when re-logged via log_params.
+    return {k: v for k, v in flat.items() if not k.startswith("mlflow.")}
 
 
 def train(cfg: DictConfig) -> None:
@@ -162,6 +195,27 @@ def train(cfg: DictConfig) -> None:
     logger.info("Saved model to %s", model_path)
     logger.info("Saved metrics to %s", metrics_path)
 
+    # MLflow logging is a no-op when no run is active (mlflow.enabled=false
+    # in the Hydra config, or unit tests that skip the start_run wrapper).
+    if mlflow.active_run() is not None:
+        mlflow.log_params(_flatten_params(cfg))
+        mlflow.log_metrics(
+            {
+                "micro_f1": metrics["micro_f1"],
+                "macro_f1": metrics["macro_f1"],
+                "micro_precision": metrics["micro_precision"],
+                "micro_recall": metrics["micro_recall"],
+                "hamming_loss": metrics["hamming_loss"],
+                "fit_seconds": metrics["fit_seconds"],
+                "predict_seconds": metrics["predict_seconds"],
+            }
+        )
+        mlflow.log_artifact(str(model_path), artifact_path="model")
+        mlflow.log_artifact(str(metrics_path), artifact_path="metrics")
+        active_run = mlflow.active_run()
+        if active_run:
+            logger.info("Logged run to MLflow: %s", active_run.info.run_id)
+
     # Hydra writes the composed config and overrides to a run-scoped directory
     # automatically; log the path so users know where to look.
     run_dir = HydraConfig.get().runtime.output_dir
@@ -170,13 +224,22 @@ def train(cfg: DictConfig) -> None:
 
 @hydra.main(version_base="1.3", config_path="../../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
-    """Run model training from the command line via Hydra."""
+    """Run model training from the command line via Hydra + MLflow."""
     install_rich_traceback(show_locals=False)
     setup_logging()
     logger.info("Configuration:\n%s", OmegaConf.to_yaml(cfg))
 
     set_seed(cfg.seed)
-    train(cfg)
+
+    # MLflow tracking is opt-in via configs/mlflow/local.yaml (mlflow.enabled).
+    # When disabled, train() detects no active run and skips logging cleanly.
+    if cfg.mlflow.enabled:
+        mlflow.set_tracking_uri(_resolve_tracking_uri(cfg.mlflow.tracking_uri))
+        mlflow.set_experiment(cfg.mlflow.experiment_name)
+        with mlflow.start_run(run_name=cfg.mlflow.run_name):
+            train(cfg)
+    else:
+        train(cfg)
 
     logger.info("Training complete")
 
