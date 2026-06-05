@@ -48,8 +48,7 @@ def run_scalene_profile() -> None:
 
     if completed.returncode != 0:
         print(
-            f"Scalene exited with code {completed.returncode}. "
-            "Confirm `pip install scalene` succeeded.",
+            f"Scalene exited with code {completed.returncode}. Confirm `pip install scalene` succeeded.",
             file=sys.stderr,
         )
         sys.exit(completed.returncode)

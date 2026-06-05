@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import hydra
 import joblib
@@ -40,24 +40,16 @@ def _resolve_train_file(raw_path: Path, train_filename: str) -> Path:
         if candidate.exists():
             return candidate
 
-    raise FileNotFoundError(
-        f"{train_filename} was not found in {raw_path}, data/processed, or data/raw."
-    )
+    raise FileNotFoundError(f"{train_filename} was not found in {raw_path}, data/processed, or data/raw.")
 
 
-def _validate_training_data(
-    df: pd.DataFrame, text_column: str, label_columns: list[str]
-) -> None:
+def _validate_training_data(df: pd.DataFrame, text_column: str, label_columns: list[str]) -> None:
     """Validate that the training dataset contains the required columns."""
     required_columns = [text_column, *label_columns]
-    missing_columns = [
-        column for column in required_columns if column not in df.columns
-    ]
+    missing_columns = [column for column in required_columns if column not in df.columns]
 
     if missing_columns:
-        raise ValueError(
-            f"Training data is missing required columns: {missing_columns}"
-        )
+        raise ValueError(f"Training data is missing required columns: {missing_columns}")
 
     if df.empty:
         raise ValueError("Training data is empty.")
@@ -71,7 +63,7 @@ def _resolve_tracking_uri(tracking_uri: str) -> str:
     Remote URIs (http, https, sqlite, databricks, ...) pass through unchanged.
     """
     if tracking_uri.startswith("file:"):
-        return to_absolute_path(tracking_uri.removeprefix("file:"))
+        return cast(str, to_absolute_path(tracking_uri.removeprefix("file:")))
     return tracking_uri
 
 
@@ -171,18 +163,10 @@ def train(cfg: DictConfig) -> None:
         "validation_split": cfg.data.val_split,
         "random_state": cfg.seed,
         "labels": label_columns,
-        "micro_f1": float(
-            f1_score(y_val, predictions, average="micro", zero_division=0)
-        ),
-        "macro_f1": float(
-            f1_score(y_val, predictions, average="macro", zero_division=0)
-        ),
-        "micro_precision": float(
-            precision_score(y_val, predictions, average="micro", zero_division=0)
-        ),
-        "micro_recall": float(
-            recall_score(y_val, predictions, average="micro", zero_division=0)
-        ),
+        "micro_f1": float(f1_score(y_val, predictions, average="micro", zero_division=0)),
+        "macro_f1": float(f1_score(y_val, predictions, average="macro", zero_division=0)),
+        "micro_precision": float(precision_score(y_val, predictions, average="micro", zero_division=0)),
+        "micro_recall": float(recall_score(y_val, predictions, average="micro", zero_division=0)),
         "hamming_loss": float(hamming_loss(y_val, predictions)),
         "hyperparameters": {
             "tfidf_max_features": cfg.features.max_features,
@@ -228,7 +212,9 @@ def train(cfg: DictConfig) -> None:
         )
         mlflow.log_artifact(str(model_path), artifact_path="model")
         mlflow.log_artifact(str(metrics_path), artifact_path="metrics")
-        logger.info("Logged run to MLflow: %s", mlflow.active_run().info.run_id)
+        active_run = mlflow.active_run()
+        if active_run:
+            logger.info("Logged run to MLflow: %s", active_run.info.run_id)
 
     # Hydra writes the composed config and overrides to a run-scoped directory
     # automatically; log the path so users know where to look.
