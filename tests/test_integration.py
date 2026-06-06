@@ -14,7 +14,14 @@ from omegaconf import DictConfig, OmegaConf
 
 from toxic_comment_classifier.train_model import train
 
-LABEL_COLUMNS = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+LABEL_COLUMNS = [
+    "toxic",
+    "severe_toxic",
+    "obscene",
+    "threat",
+    "insult",
+    "identity_hate",
+]
 
 
 def _make_cfg(tmp_path: Path, train_file: Path) -> DictConfig:
@@ -46,6 +53,8 @@ def _make_cfg(tmp_path: Path, train_file: Path) -> DictConfig:
                 "model_filename": "model.joblib",
                 "reports_dir": str(tmp_path / "reports"),
                 "metrics_filename": "metrics.json",
+                "classification_report_filename": "classification_report.txt",
+                "confusion_matrix_filename": "confusion_matrix.png",
             },
             "mlflow": {
                 "enabled": False,
@@ -104,7 +113,13 @@ class TestFullTrainingPipeline:
         with metrics_path.open() as f:
             metrics = json.load(f)
 
-        for key in ["micro_f1", "macro_f1", "hamming_loss", "fit_seconds", "predict_seconds"]:
+        for key in [
+            "micro_f1",
+            "macro_f1",
+            "hamming_loss",
+            "fit_seconds",
+            "predict_seconds",
+        ]:
             assert key in metrics, f"Missing key: {key}"
 
     def test_saved_model_can_predict(self, tmp_path: Path) -> None:

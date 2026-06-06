@@ -1,0 +1,94 @@
+# Continuous Machine Learning (CML) workflow.
+#
+# Trains the baseline model on the committed sample dataset, generates a
+# classification report and per-label confusion-matrix figure, and posts the
+# results back to the triggering PR or commit via iterative.ai's CML.
+#
+# Triggers:
+#   - pull_request -> posts a PR review comment with the report
+#   - push to main -> posts a commit comment with the report
+#
+# Required GitHub secrets: none (uses the default GITHUB_TOKEN).
+
+name: CML
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  train-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up CML
+        uses: iterative/setup-cml@v2
+        with:
+          vega: false
+
+      - name: Install dependencies (uv venv + editable install)
+        run: |
+          uv venv --python 3.11
+          uv pip install -e .
+
+      - name: Train model on sample dataset
+        run: |
+          source .venv/bin/activate
+          python -m toxic_comment_classifier.train_model \
+            data.raw_path=data/sample \
+            data.train_file=train_sample.csv \
+            mlflow.enabled=false
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-artifacts
+          path: |
+            reports/classification_report.txt
+            reports/confusion_matrix.png
+            reports/baseline_metrics.json
+            models/baseline_tfidf_logreg.joblib
+
+      - name: Build and publish CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "# 🤖 Model Training Report"
+            echo
+            echo "**Pipeline:** TF-IDF + OneVsRest Logistic Regression"
+            echo "**Dataset:** \`data/sample/train_sample.csv\` (600-row stratified sample)"
+            echo "**Commit:** \`${GITHUB_SHA}\`"
+            echo
+            echo "## Classification Report"
+            echo
+            echo '```'
+            cat reports/classification_report.txt
+            echo '```'
+            echo
+            echo "## Confusion Matrix"
+            echo
+            echo "![Confusion Matrix](./reports/confusion_matrix.png)"
+            echo
+            echo "## Metrics Summary"
+            echo
+            echo '```json'
+            cat reports/baseline_metrics.json
+            echo '```'
+          } > report.md
+          cml comment create --publish report.md
