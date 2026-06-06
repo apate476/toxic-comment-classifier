@@ -651,7 +651,92 @@ Future work may include experimenting with transformer-based models such as Dist
 ### Planned (Phase 3)
 
 - **FastAPI / Uvicorn** - Real-time model serving API
-- **GitHub Actions** - CI/CD automation (lint, type-check, test on every PR)
+- **GitHub Actions** - Continuous ML (CML) reports + Continuous Docker image publishing ✅; FastAPI deployment workflow (roadmap)
+
+## Continuous Integration & Continuous Delivery
+
+The repository ships two GitHub Actions workflows that automate model training reporting and container publishing on every push to `main` and every pull request targeting `main`.
+
+| Workflow                      | File                                  | Trigger                  | What it does                                                                 |
+| ----------------------------- | ------------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| **CML (Continuous ML)**       | `.github/workflows/cml.yaml`          | `push` + `pull_request` to `main` | Trains the baseline on a committed sample dataset and posts the classification report + confusion matrix back to the PR / commit. |
+| **Docker Publish**            | `.github/workflows/docker-publish.yaml` | `push` + `pull_request` to `main` | Builds the multi-stage image with GHA layer caching. On `main`, publishes `latest` + long-SHA tags to Docker Hub and runs a smoke test against the published image. |
+
+The pre-existing `ci.yml` (lint, type-check, pytest) and `codecheck.yaml` (lint + type-check on dev/main) workflows remain in place and continue to gate every PR.
+
+### Continuous ML (CML) workflow
+
+The CML workflow uses [iterative.ai's CML](https://cml.dev/) to attach human-readable training reports to PRs and commits.
+
+**Trigger and outputs:**
+
+- **Pull request to `main`**: CML posts a PR review comment containing the classification report, the per-label confusion matrix, and the full metrics JSON.
+- **Push to `main`**: CML posts the same report as a commit comment.
+
+**Pipeline steps** (full source in `.github/workflows/cml.yaml`):
+
+1. `actions/checkout@v5` — clone the repo.
+2. `astral-sh/setup-uv@v8` — install [uv](https://github.com/astral-sh/uv) with Python 3.11.
+3. `iterative/setup-cml@v2` (`vega: false`) — install the CML CLI.
+4. `uv venv --python 3.11` + `uv pip install -e .` — set up an isolated environment and install the project in editable mode.
+5. `python -m toxic_comment_classifier.train_model data.raw_path=data/sample data.train_file=train_sample.csv mlflow.enabled=false` — train on the committed sample (no DVC pull required).
+6. `actions/upload-artifact@v4` — archive `reports/` and `models/` for download.
+7. Build `report.md` (classification report + confusion-matrix image + metrics JSON) and call `cml comment create --publish report.md`.
+
+**Required secrets:** *none* — CML uses the default `GITHUB_TOKEN` provided to every workflow run.
+
+**Expected artifacts** (after a successful run):
+
+| Artifact                                  | Source                                                 |
+| ----------------------------------------- | ------------------------------------------------------ |
+| `reports/classification_report.txt`       | `sklearn.metrics.classification_report` per label      |
+| `reports/confusion_matrix.png`            | `multilabel_confusion_matrix` + `ConfusionMatrixDisplay` grid |
+| `reports/baseline_metrics.json`           | micro/macro F1, precision, recall, Hamming loss, timing |
+| `models/baseline_tfidf_logreg.joblib`     | trained pipeline                                        |
+
+**Sample dataset:** the workflow trains on `data/sample/train_sample.csv` — a 600-row stratified subset of the full Jigsaw training set, committed to the repo so the workflow runs end-to-end without DVC credentials. The full training set in `data/raw/train.csv` remains DVC-tracked and is the source of truth for local and Docker training.
+
+**Triggering CML locally:** open a PR against `main`. Within ~1–2 minutes the **CML / train-and-report** check appears in the PR; when it goes green the bot comment is posted.
+
+### Docker Publish workflow
+
+The Docker workflow builds the multi-stage image defined in `dockerfiles/Dockerfile` using modern Docker GitHub Actions.
+
+**Behavior matrix:**
+
+| Event                       | Build | Push to Docker Hub | Smoke test       |
+| --------------------------- | :---: | :----------------: | ---------------- |
+| `pull_request` to `main`    | ✅    | ❌                  | Against the locally loaded image |
+| `push` to `main`            | ✅    | ✅                  | Against the published `latest` tag |
+
+**Tagging strategy** (via `docker/metadata-action@v5`):
+
+- `latest` — only on pushes to the default branch (`main`).
+- `sha-<long-sha>` — every build, both PR and push, so a specific commit's image is always reproducible.
+
+**Caching:** GitHub Actions cache (`cache-from: type=gha`, `cache-to: type=gha,mode=max`) is enabled on both PR and push builds, so unchanged layers are reused across runs.
+
+**Smoke test:** after a `main` push, the workflow pulls `<DOCKER_HUB_REPOSITORY>:latest` and runs `docker run --rm <image>:latest python -c "import toxic_comment_classifier ..."`. The container's exit code propagates back to the workflow — any ImportError or runtime crash fails the job.
+
+### Required GitHub secrets
+
+Configure these once under **Settings → Secrets and variables → Actions** in the GitHub repo:
+
+| Secret                  | Used by                  | Description                                                                 |
+| ----------------------- | ------------------------ | --------------------------------------------------------------------------- |
+| `DOCKER_HUB_USERNAME`   | `docker-publish.yaml`    | Docker Hub login. Used by `docker/login-action@v3` to authenticate the push. |
+| `DOCKER_HUB_TOKEN`      | `docker-publish.yaml`    | Docker Hub **access token** (not the account password). Create one at [hub.docker.com/settings/security](https://hub.docker.com/settings/security). Scope: Read, Write, Delete. |
+| `DOCKER_HUB_REPOSITORY` | `docker-publish.yaml`    | Fully-qualified target repo, e.g. `apate476/toxic-comment-classifier`. Used as the `images:` input for `docker/metadata-action`. |
+
+CML does **not** require any custom secrets — it authenticates against GitHub using the workflow's built-in `GITHUB_TOKEN`.
+
+### Example workflow runs
+
+> Placeholders — replace with actual screenshots once the workflows have produced their first runs against `main`.
+
+- ![CML PR comment screenshot](docs/images/cml-pr-comment.png) — _CML report posted on a PR (classification report + confusion matrix)._
+- ![Docker Publish workflow run](docs/images/docker-publish-run.png) — _Docker Publish workflow with build, push, and smoke-test steps green._
+- ![Docker Hub tags](docs/images/docker-hub-tags.png) — _Resulting `latest` + `sha-...` tags on Docker Hub._
 
 ## Project Structure
 

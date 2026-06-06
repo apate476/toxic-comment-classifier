@@ -9,18 +9,33 @@ from typing import Any, cast
 
 import hydra
 import joblib
+import matplotlib
 import mlflow
 import pandas as pd
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
 from rich.traceback import install as install_rich_traceback
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score, hamming_loss, precision_score, recall_score
-from sklearn.model_selection import train_test_split
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.pipeline import Pipeline
+
+# Force the non-interactive Agg backend before pyplot is imported so the
+# confusion-matrix figure can be rendered in headless environments (CI,
+# Docker, SSH sessions).
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+from sklearn.feature_extraction.text import TfidfVectorizer  # noqa: E402
+from sklearn.linear_model import LogisticRegression  # noqa: E402
+from sklearn.metrics import (  # noqa: E402
+    ConfusionMatrixDisplay,
+    classification_report,
+    f1_score,
+    hamming_loss,
+    multilabel_confusion_matrix,
+    precision_score,
+    recall_score,
+)
+from sklearn.model_selection import train_test_split  # noqa: E402
+from sklearn.multiclass import OneVsRestClassifier  # noqa: E402
+from sklearn.pipeline import Pipeline  # noqa: E402
 
 from toxic_comment_classifier.logging_config import get_logger, setup_logging
 from toxic_comment_classifier.utils.seed import set_seed
@@ -85,6 +100,51 @@ def _flatten_params(cfg: DictConfig) -> dict[str, Any]:
     # Strip mlflow.* meta keys; mlflow rejects its own reserved namespace
     # when re-logged via log_params.
     return {k: v for k, v in flat.items() if not k.startswith("mlflow.")}
+
+
+def _write_classification_report(
+    y_true: pd.DataFrame,
+    y_pred: Any,
+    label_columns: list[str],
+    out_path: Path,
+) -> None:
+    """Render a per-label classification report and save it to disk."""
+    report = classification_report(
+        y_true,
+        y_pred,
+        target_names=label_columns,
+        zero_division=0,
+        digits=4,
+    )
+    out_path.write_text(report, encoding="utf-8")
+
+
+def _write_confusion_matrix_figure(
+    y_true: pd.DataFrame,
+    y_pred: Any,
+    label_columns: list[str],
+    out_path: Path,
+) -> None:
+    """Render a grid of per-label confusion matrices to a PNG file."""
+    matrices = multilabel_confusion_matrix(y_true, y_pred)
+    n_labels = len(label_columns)
+    ncols = min(3, n_labels)
+    nrows = (n_labels + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 4 * nrows))
+    axes_flat = axes.flatten() if n_labels > 1 else [axes]
+    for idx, (label, matrix) in enumerate(zip(label_columns, matrices, strict=True)):
+        display = ConfusionMatrixDisplay(
+            confusion_matrix=matrix,
+            display_labels=["neg", "pos"],
+        )
+        display.plot(ax=axes_flat[idx], cmap="Blues", colorbar=False)
+        axes_flat[idx].set_title(label)
+    for idx in range(n_labels, len(axes_flat)):
+        axes_flat[idx].set_visible(False)
+    fig.suptitle("Per-label confusion matrices (validation set)")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120, bbox_inches="tight")
+    plt.close(fig)
 
 
 def train(cfg: DictConfig) -> None:
@@ -186,14 +246,21 @@ def train(cfg: DictConfig) -> None:
 
     model_path = model_dir / cfg.training.model_filename
     metrics_path = reports_dir / cfg.training.metrics_filename
+    classification_report_path = reports_dir / cfg.training.classification_report_filename
+    confusion_matrix_path = reports_dir / cfg.training.confusion_matrix_filename
 
     joblib.dump(model, model_path)
 
     with metrics_path.open("w", encoding="utf-8") as file:
         json.dump(metrics, file, indent=2)
 
+    _write_classification_report(y_val, predictions, label_columns, classification_report_path)
+    _write_confusion_matrix_figure(y_val, predictions, label_columns, confusion_matrix_path)
+
     logger.info("Saved model to %s", model_path)
     logger.info("Saved metrics to %s", metrics_path)
+    logger.info("Saved classification report to %s", classification_report_path)
+    logger.info("Saved confusion matrix figure to %s", confusion_matrix_path)
 
     # MLflow logging is a no-op when no run is active (mlflow.enabled=false
     # in the Hydra config, or unit tests that skip the start_run wrapper).
@@ -212,6 +279,8 @@ def train(cfg: DictConfig) -> None:
         )
         mlflow.log_artifact(str(model_path), artifact_path="model")
         mlflow.log_artifact(str(metrics_path), artifact_path="metrics")
+        mlflow.log_artifact(str(classification_report_path), artifact_path="reports")
+        mlflow.log_artifact(str(confusion_matrix_path), artifact_path="reports")
         active_run = mlflow.active_run()
         if active_run:
             logger.info("Logged run to MLflow: %s", active_run.info.run_id)
