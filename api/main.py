@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-
 app = FastAPI(
     title="Toxic Comment Classifier API",
     description="FastAPI inference service for toxic comment classification.",
