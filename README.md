@@ -676,7 +676,7 @@ The CML workflow uses [iterative.ai's CML](https://cml.dev/) to attach human-rea
 **Pipeline steps** (full source in `.github/workflows/cml.yaml`):
 
 1. `actions/checkout@v5` — clone the repo.
-2. `astral-sh/setup-uv@v8` — install [uv](https://github.com/astral-sh/uv) with Python 3.11.
+2. `astral-sh/setup-uv@v8.2.0` — install [uv](https://github.com/astral-sh/uv) with Python 3.11. (Pinned to an immutable patch tag — `setup-uv` stopped publishing floating `@v8` major tags as of v8.0.0 for supply-chain security.)
 3. `iterative/setup-cml@v2` (`vega: false`) — install the CML CLI.
 4. `uv venv --python 3.11` + `uv pip install -e .` — set up an isolated environment and install the project in editable mode.
 5. `python -m toxic_comment_classifier.train_model data.raw_path=data/sample data.train_file=train_sample.csv mlflow.enabled=false` — train on the committed sample (no DVC pull required).
