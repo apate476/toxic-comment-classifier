@@ -1,0 +1,13 @@
+               precision    recall  f1-score   support
+
+        toxic     0.9208    0.5821    0.7133      3056
+ severe_toxic     0.5484    0.2118    0.3056       321
+      obscene     0.9229    0.6006    0.7277      1715
+       threat     0.6471    0.1486    0.2418        74
+       insult     0.8306    0.4771    0.6061      1614
+identity_hate     0.7333    0.1497    0.2486       294
+
+    micro avg     0.8865    0.5233    0.6581      7074
+    macro avg     0.7672    0.3617    0.4738      7074
+ weighted avg     0.8732    0.5233    0.6496      7074
+  samples avg     0.0530    0.0443    0.0461      7074
