@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -12,11 +10,11 @@ app = FastAPI(
 
 
 class PredictionRequest(BaseModel):
-    comments: List[str]
+    comments: list[str]
 
 
 class PredictionResponse(BaseModel):
-    predictions: List[dict]
+    predictions: list[dict]
 
 
 @app.get("/health")
