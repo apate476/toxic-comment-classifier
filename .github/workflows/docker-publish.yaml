@@ -63,7 +63,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=min caches only the final-stage layers (vs mode=max which
+          # uploads every intermediate). With a ~9 GB image (driven by the
+          # CUDA torch wheel), mode=max can spend 15+ minutes uploading a
+          # single layer to GHA cache on a cold run.
+          cache-to: type=gha,mode=min
 
       - name: Smoke test (pull request — local image)
         if: github.event_name == 'pull_request'
