@@ -23,8 +23,15 @@ WORKDIR /app
 # Install dependencies into /root/.local via pip's --user flag. This keeps the
 # install isolated to a single prefix that can be copied wholesale into the
 # runtime stage, avoiding any pip metadata or cache leaking forward.
+#
+# --extra-index-url points pip at PyTorch's CPU-only wheel index. The default
+# PyPI torch wheel bundles CUDA runtime libraries (~2-3 GB compressed). Inside
+# the container we never need GPU, so preferring the CPU build cuts the final
+# image size by ~7 GB and the Docker workflow runtime by several minutes.
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user \
+      --extra-index-url https://download.pytorch.org/whl/cpu \
+      -r requirements.txt
 
 # --- Stage 2: Runtime -------------------------------------------------------
 FROM python:3.11-slim-bookworm
