@@ -1,32 +1,55 @@
 # PHASE 3: Continuous Machine Learning (CML) & Deployment
 
 ## Overview
+
 Phase 3 implements continuous integration/continuous deployment (CI/CD) pipelines and productionizes toxic_comment_classifier on cloud infrastructure. This phase covers automated testing, containerized workflows, CML integration, and multi-platform deployment options including GCP, Cloud Run, and serverless functions.
 
 ---
 
 ## 1. Continuous Integration & Testing
 
-- [ ] **Unit Tests**: Write pytest test scripts for data processing and model components
-- [ ] **Integration Tests**: Create integration tests for full training pipeline
-- [ ] **Test Coverage**: Aim for >80% code coverage with pytest-cov
-- [ ] **GitHub Actions - Tests**: Create workflow for running tests on every push
-  - [ ] Trigger on: push to main/develop branches and PRs
-  - [ ] Test across multiple Python versions if applicable
-  - [ ] Report coverage metrics
-- [ ] **GitHub Actions - Code Quality**: Create workflow for:
-  - [ ] Running ruff linter
-  - [ ] Type checking with mypy
-  - [ ] Formatting checks
-- [ ] **GitHub Actions - Docker Build**: Create workflow for building Docker image
-  - [ ] Build on PR and main branch push
-  - [ ] Test built image
-- [ ] **Pre-commit Hooks**: Set up pre-commit hooks for:
-  - [ ] Formatting (black/ruff)
-  - [ ] Linting
-  - [ ] Type checking
-  - [ ] Trailing whitespace
-- [ ] **Test Documentation**: Document how to run tests locally and in CI
+- [x] **Unit Tests**: Write pytest test scripts for data processing and model components
+  - File: `tests/test_data.py`, `tests/test_model.py`, `tests/test_training.py`, `tests/test_predict.py`, `tests/test_evaluation.py`, `tests/test_features.py`, `tests/test_utils.py`
+  - 56 unit tests covering data loading, model scaffold, training pipeline components, prediction, evaluation metrics, feature engineering, and utilities.
+
+- [x] **Integration Tests**: Create integration tests for full training pipeline
+  - File: `tests/test_integration.py`
+  - 3 integration tests that run the full `train()` function end-to-end using a minimal in-memory dataset and mock HydraConfig, verifying that the model file and metrics JSON are produced and that the saved model can generate predictions.
+
+- [x] **Test Coverage**: Aim for >80% code coverage with pytest-cov
+  - Overall coverage: 90% across all source files.
+  - Run locally: `pytest tests/ --cov=toxic_comment_classifier --cov-report=term-missing`
+
+- [x] **GitHub Actions - Tests**: Create workflow for running tests on every push
+  - File: `.github/workflows/ci.yml`
+  - [x] Triggers on push and PRs to `main` and `dev`
+  - [x] Tests across Python 3.10, 3.11, and 3.12
+  - [x] Coverage report uploaded to Codecov via `codecov/codecov-action@v3`
+  - ![CI passing](docs/images/ci-passing.png)
+
+- [x] **GitHub Actions - Code Quality**: Create workflow for:
+  - File: `.github/workflows/codecheck.yaml`
+  - [x] Running ruff linter
+  - [x] Type checking with mypy
+  - [x] Formatting checks with ruff format
+
+- [x] **GitHub Actions - Docker Build**: Create workflow for building Docker image
+  - File: `.github/workflows/docker.yaml`
+  - [x] Builds on PR and push to `main` and `dev`
+  - [x] Tests built image by running `python -c "import toxic_comment_classifier; print('OK')"`
+
+- [x] **Pre-commit Hooks**: Set up pre-commit hooks
+  - File: `.pre-commit-config.yaml`
+  - [x] Formatting with ruff-format
+  - [x] Linting with ruff
+  - [x] Type checking with mypy
+  - [x] Trailing whitespace and end-of-file fixer
+  - ![CI passing](docs/images/ci-passing.png)
+  - ![Branch protection rules](docs/images/branch-protection.png)
+
+- [x] **Test Documentation**: Document how to run tests locally and in CI
+  - File: `TESTING.md`
+  - Covers local test execution, coverage reporting, running specific tests, pre-commit setup, and CI workflow overview.
 
 ---
 
@@ -115,42 +138,14 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
   - [ ] How to invoke deployed models
   - [ ] Monitoring and troubleshooting guide
   - [ ] Cost estimation and optimization tips
-- [ ] **Deployment Guide**: Create detailed DEPLOYMENT.md with:
-  - [ ] Step-by-step GCP setup instructions
-  - [ ] Cloud Run deployment procedure
-  - [ ] Cloud Functions configuration
-  - [ ] Environment variables and secrets management
-  - [ ] Rollback procedures
-- [ ] **API Documentation**: Document all endpoints with:
-  - [ ] Request/response schemas
-  - [ ] Example curl/Python requests
-  - [ ] Error codes and messages
-- [ ] **Architecture Documentation**: Include diagrams showing:
-  - [ ] Data pipeline
-  - [ ] Training pipeline
-  - [ ] Inference/serving architecture
-  - [ ] CI/CD workflow
-- [ ] **Screenshots/Demos**: Add:
-  - [ ] Cloud Run dashboard screenshot
-  - [ ] Monitoring dashboard screenshot
-  - [ ] Streamlit/Gradio app screenshot
-  - [ ] API response example
-  - [ ] CML workflow output sample
-- [ ] **Troubleshooting Guide**: Document solutions for:
-  - [ ] Common deployment errors
-  - [ ] Authentication issues
-  - [ ] Performance problems
-  - [ ] Cost overruns
-- [ ] **Resource Cleanup Reminder**: Create CLEANUP.md with instructions for:
-  - [ ] Deleting GCP resources (VMs, databases, etc.)
-  - [ ] Cleaning up Cloud Storage buckets
-  - [ ] Disabling APIs to avoid charges
-  - [ ] Cost monitoring recommendations
-- [ ] **Contributing Guide Update**: Update CONTRIBUTING.md with:
-  - [ ] CI/CD requirements
-  - [ ] Testing requirements for PRs
-  - [ ] Deployment process documentation
-- [ ] **Changelog**: Maintain CHANGELOG.md documenting releases and deployments
+- [ ] **Deployment Guide**: Create detailed DEPLOYMENT.md
+- [ ] **API Documentation**: Document all endpoints
+- [ ] **Architecture Documentation**: Include diagrams
+- [ ] **Screenshots/Demos**: Add screenshots for all deployed services
+- [ ] **Troubleshooting Guide**: Document common errors
+- [ ] **Resource Cleanup Reminder**: Create CLEANUP.md
+- [ ] **Contributing Guide Update**: Update CONTRIBUTING.md with CI/CD and testing requirements
+- [ ] **Changelog**: Maintain CHANGELOG.md
 
 ---
 

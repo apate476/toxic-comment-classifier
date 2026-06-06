@@ -11,3 +11,11 @@ model_filename: baseline_tfidf_logreg.joblib
 # Path where metrics JSON is saved.
 reports_dir: reports
 metrics_filename: baseline_metrics.json
+
+# Per-label classification report (sklearn.metrics.classification_report)
+# written to reports_dir. Consumed by the CML workflow to embed in PR comments.
+classification_report_filename: classification_report.txt
+
+# Per-label confusion-matrix grid (multilabel_confusion_matrix + matplotlib)
+# written to reports_dir. Also consumed by the CML workflow.
+confusion_matrix_filename: confusion_matrix.png
