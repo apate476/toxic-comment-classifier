@@ -21,11 +21,11 @@ with right_col:
     st.subheader("Deployment Info")
     st.markdown(
         """
-        **Frontend:** Streamlit  
-        **Backend:** FastAPI  
-        **Serving:** Google Cloud Run  
-        **Registry:** Artifact Registry  
-        **Training:** Vertex AI / Dockerized training  
+        - **Frontend:** Streamlit
+        - **Backend:** FastAPI
+        - **Serving:** Google Cloud Run
+        - **Registry:** Artifact Registry
+        - **Training:** Vertex AI / Dockerized training
         """
     )
 
