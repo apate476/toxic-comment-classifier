@@ -77,9 +77,7 @@ with left_col:
         default_text = "You are awful and disgusting."
     elif sample_option == "Multiple comments":
         default_text = (
-            "Thank you for your help. I really appreciate it.\n"
-            "You are awful and disgusting.\n"
-            "Have a great day."
+            "Thank you for your help. I really appreciate it.\nYou are awful and disgusting.\nHave a great day."
         )
 
     comments_text = st.text_area(
@@ -129,9 +127,7 @@ with left_col:
                         metric_col1.metric("Predicted Label", predicted_label)
                         metric_col2.metric(
                             "Toxic Probability",
-                            "N/A"
-                            if toxic_probability is None
-                            else f"{toxic_probability:.4f}",
+                            "N/A" if toxic_probability is None else f"{toxic_probability:.4f}",
                         )
 
                         if probabilities:

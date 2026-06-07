@@ -97,11 +97,7 @@ def predict(request: PredictionRequest) -> PredictionResponse:
     for index, comment in enumerate(comments):
         prediction_row = np.asarray(predicted_labels[index]).astype(int).ravel()
 
-        detected_labels = [
-            label
-            for label, value in zip(LABEL_COLUMNS, prediction_row, strict=False)
-            if value == 1
-        ]
+        detected_labels = [label for label, value in zip(LABEL_COLUMNS, prediction_row, strict=False) if value == 1]
 
         if not detected_labels:
             detected_labels = ["non_toxic"]
