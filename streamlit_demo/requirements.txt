@@ -1,0 +1,6 @@
+# Dependencies for the HuggingFace Spaces Streamlit demo.
+streamlit>=1.38.0
+requests>=2.32.0
+scikit-learn>=1.5.0
+joblib>=1.4.0
+numpy>=1.26.0

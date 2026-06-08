@@ -1,0 +1,36 @@
+# Serving image for the FastAPI inference API, optimized for Cloud Run.
+#
+# Build from the repository root (the build context must include api/,
+# models/ and requirements-api.txt):
+#
+#   docker build -f dockerfiles/Dockerfile.api -t toxic-api .
+#
+# Run locally:
+#
+#   docker run -p 8080:8080 toxic-api
+#   curl localhost:8080/health
+#
+# Cloud Run injects the PORT environment variable; the CMD honors it.
+
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install only the slim serving dependencies (no torch/dvc/mlflow) so the
+# image stays small and cold starts on Cloud Run stay fast.
+COPY requirements-api.txt ./
+RUN pip install --no-cache-dir -r requirements-api.txt
+
+COPY api/ ./api/
+COPY models/ ./models/
+
+ENV MODEL_PATH=/app/models/baseline_tfidf_logreg.joblib \
+    PORT=8080
+
+EXPOSE 8080
+
+# Shell form so ${PORT} from Cloud Run is expanded at runtime.
+CMD exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT}
