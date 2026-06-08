@@ -75,21 +75,21 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
 
 ## 3. Deployment on GCP
 
-- [ ] **GCP Project Setup**: Create GCP project and enable necessary APIs
+- [x] **GCP Project Setup**: Create GCP project and enable necessary APIs
 - [ ] **Service Account**: Create service account with appropriate permissions for:
   - [ ] Artifact Registry
   - [ ] Vertex AI
   - [ ] Cloud Run
   - [ ] Cloud Functions
   - [ ] Compute Engine
-- [ ] **Artifact Registry**: Set up Artifact Registry for storing Docker images
-  - [ ] Create repository in Artifact Registry
-  - [ ] Configure authentication from CI/CD
-  - [ ] Push Docker images to registry
-- [ ] **Vertex AI Training (Option A)**: Set up custom training on Vertex AI
-  - [ ] Create training container image
-  - [ ] Configure training job specification
-  - [ ] Document how to submit training jobs
+- [x] **Artifact Registry**: Set up Artifact Registry for storing Docker images
+  - [x] Create repository in Artifact Registry
+  - [x] Configure authentication from CI/CD
+  - [x] Push Docker images to registry
+- [x] **Vertex AI Training (Option A)**: Set up custom training on Vertex AI
+  - [x] Create training container image
+  - [x] Configure training job specification
+  - [x] Document how to submit training jobs
 - [ ] **Compute Engine Training (Option B)**: Set up training on Compute Engine instance
   - [ ] Create VM instance with GPU if needed
   - [ ] Document SSH access and training process
@@ -110,6 +110,15 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
   - [ ] Configure HTTP trigger
   - [ ] Document invocation and response format
 - [x] **Cloud Run Deployment (Option B)**: Deploy as containerized service on Cloud Run
+  - [x] Create Dockerfile optimized for Cloud Run
+  - [x] Test locally with Cloud Run emulator
+  - [x] Deploy to Cloud Run with auto-scaling
+  - [x] Document deployment process
+- [ ] **Streamlit/Gradio Deployment (Option C)**: Deploy demo app on HuggingFace Spaces
+  - [ ] Create Streamlit or Gradio interface for model
+  - [ ] Push to GitHub repository
+  - [ ] Deploy to HuggingFace Spaces
+  - [ ] Document feature walkthrough
   - Files: `dockerfiles/Dockerfile.api`, `requirements-api.txt`, `docs/section3_part2_deployment.md`
   - [x] Create Dockerfile optimized for Cloud Run
   - [ ] Test locally with Cloud Run emulator *(code + instructions ready in `docs/section3_part2_deployment.md`; pending run against the team GCP project)*
@@ -124,8 +133,8 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
 - [ ] **Load Testing**: Test deployment with load testing tool (locust, Apache JMeter)
   - [ ] Establish baseline performance metrics
   - [ ] Document scaling characteristics
-- [ ] **Monitoring Setup**: Configure Cloud Monitoring and Cloud Logging
-  - [ ] Set up log aggregation
+- [x] **Monitoring Setup**: Configure Cloud Monitoring and Cloud Logging
+  - [x] Set up log aggregation
   - [ ] Create monitoring dashboards
   - [ ] Set up alerts for anomalies
 
