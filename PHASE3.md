@@ -99,6 +99,7 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
   - [ ] Implement model upload from training
   - [ ] Document model retrieval process
 - [x] **FastAPI Service**: Create FastAPI application for model serving
+  - Files: `api/main.py`, `api/schemas.py`, `tests/test_api.py`
   - [x] Define inference endpoint(s)
   - [x] Implement request validation
   - [x] Add health check endpoint
@@ -118,6 +119,17 @@ Phase 3 implements continuous integration/continuous deployment (CI/CD) pipeline
   - [ ] Push to GitHub repository
   - [ ] Deploy to HuggingFace Spaces
   - [ ] Document feature walkthrough
+  - Files: `dockerfiles/Dockerfile.api`, `requirements-api.txt`, `docs/section3_part2_deployment.md`
+  - [x] Create Dockerfile optimized for Cloud Run
+  - [ ] Test locally with Cloud Run emulator *(code + instructions ready in `docs/section3_part2_deployment.md`; pending run against the team GCP project)*
+  - [ ] Deploy to Cloud Run with auto-scaling *(code + instructions ready in `docs/section3_part2_deployment.md`; pending run against the team GCP project)*
+  - [x] Document deployment process
+- [x] **Streamlit/Gradio Deployment (Option C)**: Deploy demo app on HuggingFace Spaces
+  - Files: `streamlit_demo/app.py`, `streamlit_demo/README.md` (Space config), `docs/section3_part2_deployment.md`
+  - [x] Create Streamlit or Gradio interface for model
+  - [x] Push to GitHub repository
+  - [ ] Deploy to HuggingFace Spaces *(code + instructions ready in `docs/section3_part2_deployment.md`; pending run against the team GCP project)*
+  - [x] Document feature walkthrough
 - [ ] **Load Testing**: Test deployment with load testing tool (locust, Apache JMeter)
   - [ ] Establish baseline performance metrics
   - [ ] Document scaling characteristics
